@@ -12,7 +12,7 @@ import AdminLayout from '../../Layouts/AdminLayout';
 
 const Dashboard = () => {
     return (
-        <div className="space-y-6">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             {/* Banner Section */}
             <div className="relative overflow-hidden rounded-2xl shadow-lg">
                 <div className="absolute inset-0 bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary)/0.8)]" />

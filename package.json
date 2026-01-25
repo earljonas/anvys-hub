@@ -18,6 +18,9 @@
         "vite": "^7.0.7"
     },
     "dependencies": {
+        "@fullcalendar/daygrid": "^6.1.20",
+        "@fullcalendar/interaction": "^6.1.20",
+        "@fullcalendar/react": "^6.1.20",
         "@inertiajs/react": "^2.3.10",
         "lucide-react": "^0.562.0",
         "motion": "^12.27.5",

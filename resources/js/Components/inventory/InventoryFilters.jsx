@@ -13,7 +13,7 @@ const InventoryFilters = ({
 }) => {
     return (
         <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="w-full md:w-100">
+            <div className="w-full md:w-100%">
                 <Input
                     icon={Search}
                     placeholder="Search items..."

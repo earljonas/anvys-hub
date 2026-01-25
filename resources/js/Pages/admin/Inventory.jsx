@@ -6,25 +6,28 @@ import InventoryFilters from '../../Components/inventory/InventoryFilters';
 import InventoryTable from '../../Components/inventory/InventoryTable';
 import AddItem from '../../Components/inventory/AddItem';
 import StockLogs from '../../Components/inventory/StockLogs';
+import ViewItemModal from '../../Components/inventory/ViewItemModal';
+import AdjustStockModal from '../../Components/inventory/AdjustStockModal';
+import EditItemModal from '../../Components/inventory/EditItemModal';
 import AdminLayout from '../../Layouts/AdminLayout';
 
 // Dummy Data
 const INITIAL_ITEMS = [
-    { id: 1, name: 'Fresh Milk', category: 'Dairy', location: 'Main Branch', stock: 50, unit: 'liters', status: 'In Stock' },
-    { id: 2, name: 'Ice Cubes', category: 'Other', location: 'Main Branch', stock: 100, unit: 'kg', status: 'In Stock' },
-    { id: 3, name: 'Strawberry Syrup', category: 'Syrups', location: 'Main Branch', stock: 8, unit: 'bottles', status: 'Low Stock' },
-    { id: 4, name: 'Chocolate Syrup', category: 'Syrups', location: 'Main Branch', stock: 15, unit: 'bottles', status: 'In Stock' },
-    { id: 5, name: 'Plastic Cups (S)', category: 'Cups', location: 'Main Branch', stock: 200, unit: 'pcs', status: 'In Stock' },
-    { id: 6, name: 'Plastic Cups (L)', category: 'Cups', location: 'Main Branch', stock: 50, unit: 'pcs', status: 'Low Stock' },
-    { id: 7, name: 'Marshmallows', category: 'Toppings', location: 'Main Branch', stock: 0, unit: 'packs', status: 'Out of Stock' },
-    { id: 8, name: 'Sprinkles', category: 'Toppings', location: 'Main Branch', stock: 25, unit: 'packs', status: 'In Stock' },
-    { id: 9, name: 'Graham Crackers', category: 'Toppings', location: 'Main Branch', stock: 12, unit: 'packs', status: 'In Stock' },
-    { id: 10, name: 'Oreo Cookies', category: 'Toppings', location: 'Main Branch', stock: 5, unit: 'packs', status: 'Low Stock' },
-    { id: 11, name: 'Vanilla Extract', category: 'Syrups', location: 'Downtown Kiosk', stock: 2, unit: 'bottles', status: 'Low Stock' },
-    { id: 12, name: 'Napkins', category: 'Other', location: 'Downtown Kiosk', stock: 500, unit: 'pcs', status: 'In Stock' },
-    { id: 13, name: 'Coffee Beans', category: 'Coffee', location: 'Main Branch', stock: 40, unit: 'kg', status: 'In Stock' },
-    { id: 14, name: 'Sugar', category: 'Other', location: 'Main Branch', stock: 10, unit: 'kg', status: 'Low Stock' },
-    { id: 15, name: 'Paper Straws', category: 'Other', location: 'Downtown Kiosk', stock: 0, unit: 'pcs', status: 'Out of Stock' },
+    { id: 1, name: 'Fresh Milk', category: 'Dairy', location: 'Main Branch', stock: 50, minStock: 20, unit: 'liters', costPerUnit: 45, status: 'In Stock' },
+    { id: 2, name: 'Ice Cubes', category: 'Other', location: 'Main Branch', stock: 100, minStock: 50, unit: 'kg', costPerUnit: 15, status: 'In Stock' },
+    { id: 3, name: 'Strawberry Syrup', category: 'Syrups', location: 'Main Branch', stock: 8, minStock: 10, unit: 'bottles', costPerUnit: 120, status: 'Low Stock' },
+    { id: 4, name: 'Chocolate Syrup', category: 'Syrups', location: 'Main Branch', stock: 15, minStock: 10, unit: 'bottles', costPerUnit: 110, status: 'In Stock' },
+    { id: 5, name: 'Plastic Cups (S)', category: 'Cups', location: 'Main Branch', stock: 200, minStock: 100, unit: 'pcs', costPerUnit: 3, status: 'In Stock' },
+    { id: 6, name: 'Plastic Cups (L)', category: 'Cups', location: 'Main Branch', stock: 50, minStock: 100, unit: 'pcs', costPerUnit: 5, status: 'Low Stock' },
+    { id: 7, name: 'Marshmallows', category: 'Toppings', location: 'Main Branch', stock: 0, minStock: 20, unit: 'packs', costPerUnit: 35, status: 'Out of Stock' },
+    { id: 8, name: 'Sprinkles', category: 'Toppings', location: 'Main Branch', stock: 25, minStock: 15, unit: 'packs', costPerUnit: 25, status: 'In Stock' },
+    { id: 9, name: 'Graham Crackers', category: 'Toppings', location: 'Main Branch', stock: 12, minStock: 10, unit: 'packs', costPerUnit: 40, status: 'In Stock' },
+    { id: 10, name: 'Oreo Cookies', category: 'Toppings', location: 'Main Branch', stock: 5, minStock: 15, unit: 'packs', costPerUnit: 65, status: 'Low Stock' },
+    { id: 11, name: 'Vanilla Extract', category: 'Syrups', location: 'Downtown Kiosk', stock: 2, minStock: 5, unit: 'bottles', costPerUnit: 150, status: 'Low Stock' },
+    { id: 12, name: 'Napkins', category: 'Other', location: 'Downtown Kiosk', stock: 500, minStock: 200, unit: 'pcs', costPerUnit: 1, status: 'In Stock' },
+    { id: 13, name: 'Coffee Beans', category: 'Coffee', location: 'Main Branch', stock: 40, minStock: 20, unit: 'kg', costPerUnit: 350, status: 'In Stock' },
+    { id: 14, name: 'Sugar', category: 'Other', location: 'Main Branch', stock: 10, minStock: 15, unit: 'kg', costPerUnit: 55, status: 'Low Stock' },
+    { id: 15, name: 'Paper Straws', category: 'Other', location: 'Downtown Kiosk', stock: 0, minStock: 100, unit: 'pcs', costPerUnit: 2, status: 'Out of Stock' },
 ];
 
 const INITIAL_LOGS = [
@@ -53,6 +56,10 @@ const AdminInventory = () => {
     // Modals
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+    const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+    const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
 
     // Derived State
     const filteredItems = items.filter(item => {
@@ -62,8 +69,7 @@ const AdminInventory = () => {
         return matchesSearch && matchesStatus && matchesLocation;
     });
 
-    // Stats Calculation (based on filtered location, but usually stats should be global or specific. 
-    // The user asked "cards will update based on locations", so we filter ONLY by location for stats)
+    // Stats Calculation
     const statsLocationFiltered = items.filter(item =>
         locationFilter === 'All Locations' || item.location === locationFilter
     );
@@ -81,6 +87,13 @@ const AdminInventory = () => {
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
+
+    // Helper to calculate status
+    const calculateStatus = (stock, minStock) => {
+        if (stock === 0) return 'Out of Stock';
+        if (stock <= minStock) return 'Low Stock';
+        return 'In Stock';
+    };
 
     // Handlers
     const handleAddItem = (newItem) => {
@@ -105,9 +118,53 @@ const AdminInventory = () => {
     };
 
     const handleEditItem = (item) => {
-        // Placeholder for edit functionality
-        console.log("Edit item:", item);
-        alert(`Edit feature coming soon for ${item.name}`);
+        setSelectedItem(item);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveEdit = (updatedItem) => {
+        setItems(items.map(item => item.id === updatedItem.id ? updatedItem : item));
+    };
+
+    const handleViewItem = (item) => {
+        setSelectedItem(item);
+        setIsViewModalOpen(true);
+    };
+
+    const handleOpenAdjustStock = (item) => {
+        setSelectedItem(item);
+        setIsAdjustStockModalOpen(true);
+    };
+
+    const handleAdjustStock = (itemId, type, quantity) => {
+        setItems(items.map(item => {
+            if (item.id === itemId) {
+                const newStock = type === 'in'
+                    ? item.stock + quantity
+                    : Math.max(0, item.stock - quantity);
+                return {
+                    ...item,
+                    stock: newStock,
+                    status: calculateStatus(newStock, item.minStock)
+                };
+            }
+            return item;
+        }));
+
+        // Add log
+        const item = items.find(i => i.id === itemId);
+        if (item) {
+            const newLog = {
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0],
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                item: item.name,
+                location: item.location,
+                type: type === 'in' ? 'IN' : 'OUT',
+                quantity: quantity
+            };
+            setLogs([newLog, ...logs]);
+        }
     };
 
     useEffect(() => {
@@ -122,6 +179,7 @@ const AdminInventory = () => {
                 </div>
                 <div className="flex gap-3">
                     <Button
+                        className="cursor-pointer"
                         variant="outline"
                         icon={History}
                         onClick={() => setIsLogsModalOpen(true)}
@@ -129,6 +187,7 @@ const AdminInventory = () => {
                         Stock Logs
                     </Button>
                     <Button
+                        className="cursor-pointer"
                         variant="primary"
                         icon={Plus}
                         onClick={() => setIsAddModalOpen(true)}
@@ -158,6 +217,8 @@ const AdminInventory = () => {
                     onPageChange={setCurrentPage}
                     onDelete={handleDeleteItem}
                     onEdit={handleEditItem}
+                    onView={handleViewItem}
+                    onAdjustStock={handleOpenAdjustStock}
                 />
             </div>
 
@@ -173,6 +234,29 @@ const AdminInventory = () => {
                 onClose={() => setIsLogsModalOpen(false)}
                 logs={logs}
             />
+
+            <ViewItemModal
+                isOpen={isViewModalOpen}
+                onClose={() => setIsViewModalOpen(false)}
+                item={selectedItem}
+                onEdit={handleEditItem}
+                onAdjustStock={handleOpenAdjustStock}
+            />
+
+            <AdjustStockModal
+                isOpen={isAdjustStockModalOpen}
+                onClose={() => setIsAdjustStockModalOpen(false)}
+                item={selectedItem}
+                onAdjust={handleAdjustStock}
+            />
+
+            <EditItemModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                item={selectedItem}
+                onSave={handleSaveEdit}
+                locations={LOCATIONS}
+            />
         </div>
     );
 };
@@ -180,3 +264,4 @@ const AdminInventory = () => {
 AdminInventory.layout = page => <AdminLayout>{page}</AdminLayout>;
 
 export default AdminInventory;
+

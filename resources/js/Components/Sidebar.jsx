@@ -49,7 +49,7 @@ const Sidebar = () => {
 
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="rounded-lg p-2 transition-all text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
+                    className="rounded-lg p-2 transition-all cursor-pointer text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]"
                 >
                     <PanelLeft size={20} />
                 </button>

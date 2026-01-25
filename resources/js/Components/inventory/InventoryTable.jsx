@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit2, Trash2, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
     let colorClass = "";
@@ -25,34 +25,42 @@ const StatusBadge = ({ status }) => {
     );
 };
 
-const InventoryTable = ({ items, currentPage, totalPages, onPageChange, onDelete, onEdit }) => {
+const InventoryTable = ({ items, currentPage, totalPages, onPageChange, onDelete, onEdit, onView, onAdjustStock }) => {
     return (
         <div className="bg-white rounded-xl border border-[hsl(var(--border))] overflow-hidden shadow-sm">
             <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-auto">
                     <thead>
                         <tr className="bg-[hsl(var(--muted))] border-b border-[hsl(var(--border))]">
                             <th className="text-left py-4 px-6 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Item Name</th>
-                            <th className="text-left py-4 px-6 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Category</th>
-                            <th className="text-left py-4 px-6 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
-                            <th className="text-left py-4 px-6 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Current Stock</th>
-                            <th className="text-left py-4 px-6 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Status</th>
-                            <th className="text-right py-4 px-6 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Actions</th>
+                            <th className="text-left py-4 px-10 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
+                            <th className="text-left py-4 px-10 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Current Stock</th>
+                            <th className="text-left py-4 px-10 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Status</th>
+                            <th className="text-right py-4 px-8 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[hsl(var(--border))]">
                         {items.length > 0 ? (
                             items.map((item) => (
-                                <tr key={item.id} className="hover:bg-[hsl(var(--sidebar-accent))] transition-colors">
+                                <tr
+                                    key={item.id}
+                                    className="hover:bg-[hsl(var(--sidebar-accent))] transition-colors cursor-pointer"
+                                    onClick={() => onView(item)}
+                                >
                                     <td className="py-4 px-6 text-sm font-medium text-[hsl(var(--foreground))]">{item.name}</td>
-                                    <td className="py-4 px-6 text-sm text-[hsl(var(--muted-foreground))]">{item.category}</td>
-                                    <td className="py-4 px-6 text-sm text-[hsl(var(--muted-foreground))]">{item.location}</td>
-                                    <td className="py-4 px-6 text-sm font-medium text-[hsl(var(--foreground))]">{item.stock} {item.unit}</td>
-                                    <td className="py-4 px-6">
+                                    <td className="py-4 px-10 text-sm text-[hsl(var(--muted-foreground))]">{item.location}</td>
+                                    <td className="py-4 px-10 text-sm font-medium text-[hsl(var(--foreground))]">{item.stock} {item.unit}</td>
+                                    <td className="py-4 px-8">
                                         <StatusBadge status={item.status} />
                                     </td>
-                                    <td className="py-4 px-6 text-right">
+                                    <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
                                         <div className="flex justify-end gap-2">
+                                            <button
+                                                onClick={() => onAdjustStock(item)}
+                                                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                                            >
+                                                <ArrowUpDown size={16} />
+                                            </button>
                                             <button
                                                 onClick={() => onEdit(item)}
                                                 className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
@@ -71,7 +79,7 @@ const InventoryTable = ({ items, currentPage, totalPages, onPageChange, onDelete
                             ))
                         ) : (
                             <tr>
-                                <td colSpan="6" className="py-8 text-center text-[hsl(var(--muted-foreground))]">
+                                <td colSpan="5" className="py-8 text-center text-[hsl(var(--muted-foreground))]">
                                     No items found.
                                 </td>
                             </tr>

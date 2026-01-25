@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import Input from '../common/Input';
 import Button from '../common/Button';
 
-const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
+const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
     const [formData, setFormData] = useState({
         name: '',
         location: '',
@@ -13,7 +13,20 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
         costPerUnit: ''
     });
 
-    if (!isOpen) return null;
+    useEffect(() => {
+        if (item) {
+            setFormData({
+                name: item.name || '',
+                location: item.location || '',
+                stock: item.stock?.toString() || '',
+                minStock: item.minStock?.toString() || '',
+                unit: item.unit || 'pcs',
+                costPerUnit: item.costPerUnit?.toString() || ''
+            });
+        }
+    }, [item]);
+
+    if (!isOpen || !item) return null;
 
     const calculateStatus = (stock, minStock) => {
         const s = parseInt(stock) || 0;
@@ -25,24 +38,23 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        const newItem = {
+        const updatedItem = {
+            ...item,
             ...formData,
-            id: Date.now(),
             stock: parseInt(formData.stock) || 0,
             minStock: parseInt(formData.minStock) || 0,
             costPerUnit: parseFloat(formData.costPerUnit) || 0,
             status: calculateStatus(formData.stock, formData.minStock)
         };
-        onAdd(newItem);
+        onSave(updatedItem);
         onClose();
-        setFormData({ name: '', location: '', stock: '', minStock: '', unit: 'pcs', costPerUnit: '' });
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden border border-[hsl(var(--border))]">
                 <div className="flex justify-between items-center p-4 border-b border-[hsl(var(--border))]">
-                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">Add New Item</h3>
+                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">Edit Item</h3>
                     <button onClick={onClose} className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
                         <X size={20} />
                     </button>
@@ -106,22 +118,6 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Location</label>
-                        <select
-                            required
-                            className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
-                            value={formData.location}
-                            onChange={e => setFormData({ ...formData, location: e.target.value })}
-                        >
-                            <option value="">Select Location</option>
-                            <option value="All Locations">All Locations</option>
-                            {locations.map(loc => (
-                                <option key={loc} value={loc}>{loc}</option>
-                            ))}
-                        </select>
-                    </div>
-
                     <div className="pt-4 flex justify-end gap-3">
                         <Button
                             type="button"
@@ -134,7 +130,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
                             type="submit"
                             variant="primary"
                         >
-                            Add Item
+                            Save Changes
                         </Button>
                     </div>
                 </form>
@@ -143,5 +139,4 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
     );
 };
 
-export default AddItemModal;
-
+export default EditItemModal;
