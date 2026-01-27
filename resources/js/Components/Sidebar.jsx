@@ -216,7 +216,7 @@ const Sidebar = () => {
 
                 <button
                     onClick={handleLogout}
-                    className={`flex items-center
+                    className={`flex items-center cursor-pointer
                         ${isCollapsed ? 'justify-center gap-0' : 'gap-3'}
                         w-full px-3 py-2.5 rounded-lg
                         transition-all duration-200 ease-out

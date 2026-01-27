@@ -4,50 +4,22 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
+use App\Http\Controllers\Auth\HomeController;
+use App\Http\Controllers\Auth\LoginController;
 
 // Root redirect
-Route::get('/', function () {
-    if (Auth::check()) {
-        return Auth::user()->is_admin
-            ? redirect('/admin/dashboard')
-            : redirect('/staff/attendance');
-    }
-    return redirect('/login');
-});
+Route::get('/', [HomeController::class, 'index']);
 
 // Guest Routes
 Route::middleware('guest')->group(function () {
-    Route::get('/login', function () {
-        return Inertia::render('Auth/Login');
-    })->name('login');
-
-    Route::post('/login', function (Request $request) {
-        $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required'],
-        ]);
-
-        if (Auth::attempt($credentials, $request->remember)) {
-            $request->session()->regenerate();
-
-            return Auth::user()->is_admin
-                ? redirect()->intended('/admin/dashboard')
-                : redirect()->intended('/staff/attendance');
-        }
-
-        return back()->withErrors([
-            'email' => 'The provided credentials do not match our records.',
-        ])->onlyInput('email');
-    });
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login.post');
 });
 
 // Logout
-Route::post('/logout', function (Request $request) {
-    Auth::logout();
-    $request->session()->invalidate();
-    $request->session()->regenerateToken();
-    return redirect('/login');
-})->middleware('auth')->name('logout');
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
 
 // Admin Routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
