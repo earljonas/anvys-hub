@@ -106,11 +106,10 @@ const Events = () => {
     const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
     return (
-        <div className="space-y-6">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Event Booking</h1>
-                    <p className="text-[hsl(var(--muted-foreground))]">Manage catering and event reservations</p>
                 </div>
                 <Button variant="primary" onClick={() => handleAddEvent()} className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
                     <Plus size={18} /> Add Event

@@ -4,14 +4,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anvy's</title>
+    <title>Anvy's Hub</title>
+
+    @routes
     @viteReactRefresh
-    @vite('resources/css/app.css')
     @vite('resources/js/app.jsx')
     @inertiaHead
 </head>
 
-<body>
+<body class="antialiased font-sans">
     @inertia
 </body>
 

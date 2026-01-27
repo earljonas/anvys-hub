@@ -25,7 +25,7 @@ const LocationCard = ({ location, onView, onEdit, onDelete }) => {
                 <h3 className="text-lg font-bold text-[hsl(var(--foreground))]">{location.name}</h3>
                 <div className="flex items-start gap-1 text-[hsl(var(--muted-foreground))] text-xs">
                     <MapPin size={16} className="mt-0.5 shrink-0" />
-                    <span className="line-clamp-2 mt-1">{location.address}</span>
+                    <span className="line-clamp-2 mt-0.5">{location.address}</span>
                 </div>
             </div>
 
