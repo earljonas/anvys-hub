@@ -123,6 +123,7 @@ const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
                             type="button"
                             variant="ghost"
                             onClick={onClose}
+                            className='border border-[hsl(var(--muted))] cursor-pointer'
                         >
                             Cancel
                         </Button>

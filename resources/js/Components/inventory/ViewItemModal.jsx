@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Package, MapPin, ArrowUpDown, Edit2 } from 'lucide-react';
+import { X, Package, MapPin } from 'lucide-react';
 import Button from '../common/Button';
 
 const StatusBadge = ({ status }) => {
@@ -102,18 +102,16 @@ const ViewItemModal = ({ isOpen, onClose, item, onEdit, onAdjustStock }) => {
                     <Button
                         variant="primary"
                         className="flex-1 cursor-pointer"
-                        icon={Edit2}
                         onClick={() => {
                             onClose();
                             onEdit(item);
                         }}
                     >
-                        Edit
+                        Edit Item
                     </Button>
                     <Button
                         variant="outline"
                         className="flex-1 cursor-pointer"
-                        icon={ArrowUpDown}
                         onClick={() => {
                             onClose();
                             onAdjustStock(item);
