@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { Plus, Archive, LayoutGrid } from 'lucide-react';
 import Button from '../../Components/common/Button';
@@ -6,21 +7,12 @@ import LocationCard from '../../Components/locations/LocationCard';
 import AddLocationCard from '../../Components/locations/AddLocationCard';
 import LocationModal from '../../Components/locations/LocationModal';
 
-// Mock Data (Replace with Inertia props later)
-const MOCK_LOCATIONS = [
-    { id: 1, name: 'SM Mall Branch', address: '123 SM Mall, Makati City', status: 'Active', staffCount: 3 },
-    { id: 2, name: 'Robinsons Branch', address: '456 Robinsons Place, Quezon City', status: 'Active', staffCount: 3 },
-    { id: 3, name: 'Ayala Center', address: '789 Ayala Ave, Makati City', status: 'Active', staffCount: 3 },
-];
-
 const Locations = () => {
-    // State
-    const [locations, setLocations] = useState(MOCK_LOCATIONS);
+    const { locations = [] } = usePage().props;
     const [activeTab, setActiveTab] = useState('active');
 
-    // Modal State
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState('view'); // 'view', 'add', 'edit'
+    const [modalMode, setModalMode] = useState('view');
     const [selectedLocation, setSelectedLocation] = useState(null);
 
     // Filter Logic
@@ -48,16 +40,25 @@ const Locations = () => {
     };
 
     const handleDelete = (location) => {
-        // Implement delete/archive logic here
         if (confirm(`Are you sure you want to archive ${location.name}?`)) {
-            console.log('Archiving', location.id);
+            router.delete(`/admin/locations/${location.id}`, {
+                preserveScroll: true,
+            });
         }
     };
 
     const handleSave = (data) => {
-        console.log('Saving data', data);
-        setIsModalOpen(false);
-        // Here you would typically make an Inertia router.post/put call
+        if (modalMode === 'add') {
+            router.post('/admin/locations', data, {
+                preserveScroll: true,
+                onSuccess: () => setIsModalOpen(false),
+            });
+        } else if (modalMode === 'edit' && selectedLocation) {
+            router.put(`/admin/locations/${selectedLocation.id}`, data, {
+                preserveScroll: true,
+                onSuccess: () => setIsModalOpen(false),
+            });
+        }
     };
 
     return (
@@ -68,7 +69,7 @@ const Locations = () => {
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Locations</h1>
                 </div>
-                <Button variant="primary" onClick={handleAdd} className="flex items-center gap-2">
+                <Button variant="primary" onClick={handleAdd} className="flex cursor-pointer items-center gap-2">
                     <Plus size={18} />
                     Add Location
                 </Button>
@@ -110,7 +111,6 @@ const Locations = () => {
                     />
                 ))}
 
-                {/* Always show Add Card at the end if we are in Active tab */}
                 {activeTab === 'active' && (
                     <AddLocationCard onClick={handleAdd} />
                 )}

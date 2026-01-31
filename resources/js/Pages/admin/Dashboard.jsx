@@ -108,7 +108,7 @@ const Dashboard = () => {
     );
 };
 
-// Stat Card with theme variants
+// Stat Card 
 const StatCard = ({ title, value, subtitle, icon: Icon, variant = 'primary' }) => {
     const variants = {
         primary: {

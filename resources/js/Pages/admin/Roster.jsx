@@ -1,38 +1,34 @@
 import React, { useState, useMemo } from 'react';
+import { router, usePage } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { Search, Filter, Plus, MapPin, ChevronDown } from 'lucide-react';
 import RosterTable from '../../Components/roster/RosterTable';
+import AddEmployeeModal from '../../Components/roster/AddEmployeeModal';
 import EditEmployeeModal from '../../Components/roster/EditEmployeeModal';
 import ViewEmployeeModal from '../../Components/roster/ViewEmployeeModal';
 import Input from '../../Components/common/Input';
 import Button from '../../Components/common/Button';
 
-// Mock Data
-const MOCK_EMPLOYEES = [
-    { id: 1, employeeId: 'EMP-001', name: 'John Doe', position: 'Manager', location: 'Davao Branch', status: 'Active', email: 'john@example.com', contactNumber: '09171234567', rate: '500' },
-    { id: 2, employeeId: 'EMP-002', name: 'Jane Smith', position: 'Cashier', location: 'Cebu Branch', status: 'Active', email: 'jane@example.com', contactNumber: '09179876543', rate: '350' },
-    { id: 3, employeeId: 'EMP-003', name: 'Mike Johnson', position: 'Stock Clerk', location: 'Davao Branch', status: 'Inactive', email: 'mike@example.com', contactNumber: '09175554444', rate: '300' },
-    { id: 4, employeeId: 'EMP-004', name: 'Sarah Lee', position: 'Server', location: 'Manila Branch', status: 'On Leave', email: 'sarah@example.com', contactNumber: '09171112222', rate: '320' },
-];
-
 const Roster = () => {
-    // State
-    const [employees, setEmployees] = useState(MOCK_EMPLOYEES);
+    // Get employees and locations from Inertia props
+    const { employees = [], locations: locationOptions } = usePage().props;
+
+    // Local State
     const [searchQuery, setSearchQuery] = useState('');
     const [statusFilter, setStatusFilter] = useState('All Status');
     const [locationFilter, setLocationFilter] = useState('All Locations');
 
     // Modal State
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [selectedEmployee, setSelectedEmployee] = useState(null);
 
-    // Get unique locations for the dropdown
-    const locations = useMemo(() => {
-        return [...new Set(employees.map(emp => emp.location))];
-    }, [employees]);
+    const locationNames = useMemo(() => {
+        return locationOptions ? locationOptions.map(l => l.name) : [];
+    }, [locationOptions]);
 
-    // Filter Logic
+    // Filter
     const filteredEmployees = employees.filter(emp => {
         const matchesSearch =
             emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -46,10 +42,17 @@ const Roster = () => {
     });
 
     // Handlers
+    const handleAddEmployee = (newEmployeeData) => {
+        router.post('/admin/employees', newEmployeeData, {
+            preserveScroll: true,
+            onSuccess: () => setIsAddModalOpen(false),
+        });
+    };
+
     const handleEdit = (employee) => {
         setSelectedEmployee(employee);
         setIsEditModalOpen(true);
-        setIsViewModalOpen(false); // Ensure view is closed if switching directly
+        setIsViewModalOpen(false);
     };
 
     const handleView = (employee) => {
@@ -59,13 +62,19 @@ const Roster = () => {
 
     const handleArchive = (employee) => {
         if (confirm(`Are you sure you want to archive ${employee.name}?`)) {
-            setEmployees(employees.filter(e => e.id !== employee.id));
+            router.delete(`/admin/employees/${employee.id}`, {
+                preserveScroll: true,
+            });
         }
     };
 
-    const handleSaveEdit = (updatedEmployee) => {
-        setEmployees(employees.map(emp => emp.id === updatedEmployee.id ? updatedEmployee : emp));
-        setIsEditModalOpen(false);
+    const handleSaveEdit = (updatedEmployeeData) => {
+        if (!selectedEmployee) return;
+
+        router.put(`/admin/employees/${selectedEmployee.id}`, updatedEmployeeData, {
+            preserveScroll: true,
+            onSuccess: () => setIsEditModalOpen(false),
+        });
     };
 
     return (
@@ -73,7 +82,11 @@ const Roster = () => {
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Roster</h1>
-                <Button variant="primary" className="flex items-center gap-2">
+                <Button
+                    variant="primary"
+                    className="flex items-center gap-2"
+                    onClick={() => setIsAddModalOpen(true)}
+                >
                     <Plus size={18} /> Add Employee
                 </Button>
             </div>
@@ -114,7 +127,7 @@ const Roster = () => {
                             onChange={(e) => setLocationFilter(e.target.value)}
                         >
                             <option value="All Locations">All Locations</option>
-                            {locations.map(loc => (
+                            {locationNames.map(loc => (
                                 <option key={loc} value={loc}>{loc}</option>
                             ))}
                         </select>
@@ -134,11 +147,19 @@ const Roster = () => {
             />
 
             {/* Modals */}
+            <AddEmployeeModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSave={handleAddEmployee}
+                locations={locationOptions}
+            />
+
             <EditEmployeeModal
                 isOpen={isEditModalOpen}
                 onClose={() => setIsEditModalOpen(false)}
                 employee={selectedEmployee}
                 onSave={handleSaveEdit}
+                locations={locationOptions}
             />
 
             <ViewEmployeeModal

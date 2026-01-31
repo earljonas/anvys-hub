@@ -11,9 +11,6 @@ const StatusBadge = ({ status }) => {
         case 'inactive':
             colorClass = "bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]";
             break;
-        case 'on leave':
-            colorClass = "bg-amber-100 text-amber-700";
-            break;
         default:
             colorClass = "bg-gray-100 text-gray-700";
     }
@@ -50,7 +47,6 @@ const RosterTable = ({ employees, pagination, onPageChange, onEdit, onArchive, o
                                     <td className="py-4 px-6">
                                         <div className="flex flex-col">
                                             <span className="text-sm font-medium text-[hsl(var(--foreground))]">{employee.name}</span>
-                                            <span className="text-xs text-[hsl(var(--muted-foreground))]">{employee.employeeId}</span>
                                         </div>
                                     </td>
                                     <td className="py-4 px-6 text-sm text-[hsl(var(--foreground))]">{employee.position}</td>

@@ -56,7 +56,7 @@ const EventModal = ({ isOpen, onClose, mode, event, selectedDate, onSave }) => {
 
     if (!isOpen) return null;
 
-    const isView = currentMode === 'view';
+    const isView = currentMode === 'view' || currentMode === 'view-only';
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
@@ -169,19 +169,21 @@ const EventModal = ({ isOpen, onClose, mode, event, selectedDate, onSave }) => {
                     </form>
                 </div>
 
+                {/* Footer Buttons */}
                 <div className="p-4 border-t border-[hsl(var(--border))] flex justify-end gap-3 shrink-0">
                     <Button variant="ghost" onClick={onClose}>
-                        {isView ? 'Close' : 'Cancel'}
+                        {currentMode.includes('view') ? 'Close' : 'Cancel'}
                     </Button>
-                    {isView ? (
+                    {currentMode === 'view' && (
                         <Button variant="primary" onClick={() => setCurrentMode('edit')} className="flex items-center gap-2">
                             <Edit2 size={16} /> Edit Details
                         </Button>
-                    ) : (
-                        <Button variant="primary" onClick={() => { onSave(formData); onClose(); }}>
+                    )}
+                    {currentMode === 'edit' || currentMode === 'add' ? (
+                        <Button variant="primary" onClick={() => { onSave(formData); }}>
                             {mode === 'add' ? 'Confirm Booking' : 'Save Changes'}
                         </Button>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

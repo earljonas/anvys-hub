@@ -3,8 +3,8 @@ import { X } from 'lucide-react';
 import Input from '../common/Input';
 import Button from '../common/Button';
 
-const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }) => {
-    const [formData, setFormData] = useState({
+const AddEmployeeModal = ({ isOpen, onClose, onSave, locations = [] }) => {
+    const initialFormState = {
         name: '',
         position: '',
         locationId: '',
@@ -13,49 +13,52 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
         rate: '',
         status: 'Active',
         employeeId: ''
-    });
+    };
+
+    const [formData, setFormData] = useState(initialFormState);
 
     useEffect(() => {
-        if (employee) {
-            setFormData({
-                name: employee.name || '',
-                position: employee.position || '',
-                locationId: employee.locationId || '',
-                email: employee.email || '',
-                contactNumber: employee.contactNumber || '',
-                rate: employee.rate || '',
-                status: employee.status || 'Active',
-                employeeId: employee.employeeId || ''
-            });
+        if (isOpen) {
+            const randomId = `EMP-${Math.floor(100 + Math.random() * 900)}`;
+            setFormData(prev => ({ ...initialFormState, employeeId: randomId }));
         }
-    }, [employee]);
+    }, [isOpen]);
 
-    if (!isOpen || !employee) return null;
+    if (!isOpen) return null;
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        onSave({ ...employee, ...formData });
+
+        const newEmployee = {
+            ...formData,
+            id: Date.now(),
+        };
+
+        onSave(newEmployee);
+        setFormData(initialFormState);
         onClose();
     };
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl mx-4 overflow-hidden border border-[hsl(var(--border))]">
+                {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b border-[hsl(var(--border))]">
-                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">Edit Employee</h3>
+                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">Add New Employee</h3>
                     <button onClick={onClose} className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors">
                         <X size={20} />
                     </button>
                 </div>
 
+                {/* Form Body */}
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                    {/* Read Only ID */}
+
                     <div>
                         <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">Employee ID</label>
                         <Input
                             value={formData.employeeId}
                             disabled
-                            className="bg-[hsl(var(--muted))] opacity-75"
+                            className="bg-[hsl(var(--muted))] opacity-75 cursor-not-allowed"
                         />
                     </div>
 
@@ -65,6 +68,7 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
                             <Input
                                 value={formData.name}
                                 onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                placeholder="e.g. Juan dela Cruz"
                                 required
                             />
                         </div>
@@ -73,6 +77,7 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
                             <Input
                                 value={formData.position}
                                 onChange={e => setFormData({ ...formData, position: e.target.value })}
+                                placeholder="e.g. Cashier"
                                 required
                             />
                         </div>
@@ -84,6 +89,7 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
                             <Input
                                 value={formData.contactNumber}
                                 onChange={e => setFormData({ ...formData, contactNumber: e.target.value })}
+                                placeholder="0917..."
                             />
                         </div>
                         <div>
@@ -92,6 +98,7 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
                                 type="email"
                                 value={formData.email}
                                 onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                placeholder="email@example.com"
                             />
                         </div>
                     </div>
@@ -116,6 +123,7 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
                                 type="number"
                                 value={formData.rate}
                                 onChange={e => setFormData({ ...formData, rate: e.target.value })}
+                                placeholder="0.00"
                             />
                         </div>
                         <div className="col-span-1">
@@ -131,12 +139,13 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
                         </div>
                     </div>
 
+                    {/* Footer / Buttons */}
                     <div className="pt-4 flex justify-end gap-3 border-t border-[hsl(var(--border))] mt-4">
                         <Button type="button" variant="ghost" onClick={onClose} className="border border-[hsl(var(--border))]">
                             Cancel
                         </Button>
                         <Button type="submit" variant="primary">
-                            Save Changes
+                            Add Employee
                         </Button>
                     </div>
                 </form>
@@ -145,4 +154,4 @@ const EditEmployeeModal = ({ isOpen, onClose, employee, onSave, locations = [] }
     );
 };
 
-export default EditEmployeeModal;
+export default AddEmployeeModal;

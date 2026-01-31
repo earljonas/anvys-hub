@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { router, usePage } from '@inertiajs/react'; // ADDED
 import AdminLayout from '../../Layouts/AdminLayout';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, History, Clock } from 'lucide-react';
 import Button from '../../Components/common/Button';
@@ -25,11 +26,12 @@ const Events = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isDayModalOpen, setIsDayModalOpen] = useState(false);
 
-    const [events, setEvents] = useState([
-        { id: 1, customerName: 'Juan Rodriguez', eventDate: '2026-01-15', eventTime: '14:00', totalPrice: 4500, paymentStatus: 'Paid', packageId: 'sweet', address: 'Davao City', contactNumber: '09123' },
-        { id: 2, customerName: 'Jane Doe', eventDate: '2026-01-26', eventTime: '09:00', totalPrice: 5250, paymentStatus: 'Pending', packageId: 'grand', address: 'Tagum City', contactNumber: '09456' },
-        { id: 3, customerName: 'Maria Santos', eventDate: '2026-01-25', eventTime: '16:00', totalPrice: 3000, paymentStatus: 'Partial', packageId: 'ultimate', address: 'Panabo City', contactNumber: '09789' },
-    ]);
+    const { events: initialEvents = [] } = usePage().props;
+    const [events, setEvents] = useState(initialEvents);
+
+    React.useEffect(() => {
+        setEvents(initialEvents);
+    }, [initialEvents]);
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -40,8 +42,6 @@ const Events = () => {
     const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
     const calendarGrid = [...blanks, ...days];
 
-    // --- FIXED FILTERING LOGIC ---
-    // We compare dates by setting the time to 00:00:00 to ensure "Today" is included in upcoming
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -56,7 +56,6 @@ const Events = () => {
         eventDate.setHours(0, 0, 0, 0);
         return eventDate < startOfToday;
     }).sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
-    // ----------------------------
 
     const handlePrevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
     const handleNextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
@@ -81,24 +80,40 @@ const Events = () => {
     const handleViewEvent = (event) => {
         setIsDayModalOpen(false);
         setSelectedEvent(event);
-        setEventModalMode('view');
+
+        const eventDate = new Date(event.eventDate);
+        eventDate.setHours(0, 0, 0, 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (eventDate < today) {
+            setEventModalMode('view-only');
+        } else {
+            setEventModalMode('view');
+        }
+
         setIsEventModalOpen(true);
     };
 
     const handleSaveEvent = (data) => {
         if (data.id) {
-            setEvents(events.map(e => e.id === data.id ? { ...e, ...data } : e));
+            router.put(`/admin/events/${data.id}`, data, {
+                onSuccess: () => setIsEventModalOpen(false),
+                preserveScroll: true
+            });
         } else {
-            setEvents([...events, { ...data, id: Date.now() }]);
+            router.post('/admin/events', data, {
+                onSuccess: () => setIsEventModalOpen(false),
+                preserveScroll: true
+            });
         }
-        setIsEventModalOpen(false);
     };
 
     const getEventsForDay = (day) => {
         if (!day) return [];
-        // Extract local date string YYYY-MM-DD
+
         const date = new Date(year, month, day);
-        const dateStr = date.toLocaleDateString('en-CA'); // en-CA format is YYYY-MM-DD
+        const dateStr = date.toLocaleDateString('en-CA');
         return events.filter(e => e.eventDate === dateStr);
     };
 

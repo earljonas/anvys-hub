@@ -56,7 +56,7 @@ const Sidebar = () => {
                 {!isCollapsed && (
                     <div className="flex items-center gap-3">
                         <img src="/logo.png" alt="Anvy's Hub" className="w-8 h-8 object-contain" />
-                        <span className="text-xl font-bold tracking-tight">Anvy's Hub</span>
+                        <span className="text-xl font-bold tracking-tight text-[hsl(var(--foreground))]">Anvy's Hub</span>
                     </div>
                 )}
                 <button
