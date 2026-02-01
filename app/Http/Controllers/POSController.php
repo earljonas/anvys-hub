@@ -69,6 +69,8 @@ class POSController extends Controller
      */
     public function storeOrder(Request $request)
     {
+        \Illuminate\Support\Facades\Log::info('Order Request Payload:', $request->all());
+
         $validated = $request->validate([
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
@@ -77,7 +79,12 @@ class POSController extends Controller
             'items.*.unit_price' => 'required|numeric|min:0',
             'items.*.addons_data' => 'nullable|array',
             'items.*.total_price' => 'required|numeric|min:0',
+            'items.*.product_name' => 'required|string',
+            'items.*.size_name' => 'nullable|string',
             'discount' => 'nullable|numeric|min:0|max:100',
+            'payment_method' => 'required|in:cash,card,gcash',
+            'amount_received' => 'nullable|numeric|min:0',
+            'reference_number' => 'nullable|string',
         ]);
 
         try {
@@ -88,6 +95,13 @@ class POSController extends Controller
             $discountAmount = ($subtotal * $discountPercent) / 100;
             $total = $subtotal - $discountAmount;
 
+            // Calculate change for cash payments
+            $amountReceived = $validated['amount_received'] ?? null;
+            $changeAmount = null;
+            if ($validated['payment_method'] === 'cash' && $amountReceived !== null) {
+                $changeAmount = $amountReceived - $total;
+            }
+
             $order = Order::create([
                 'order_number' => Order::generateOrderNumber(),
                 'subtotal' => $subtotal,
@@ -95,6 +109,10 @@ class POSController extends Controller
                 'discount_amount' => $discountAmount,
                 'total' => $total,
                 'status' => 'completed',
+                'payment_method' => $validated['payment_method'],
+                'amount_received' => $amountReceived,
+                'change_amount' => $changeAmount,
+                'reference_number' => $validated['reference_number'] ?? null,
                 'created_by' => Auth::id(),
             ]);
 
@@ -112,10 +130,33 @@ class POSController extends Controller
 
             DB::commit();
 
-            return redirect()->back()->with('success', 'Order #' . $order->order_number . ' completed successfully!');
+            // Return order data for receipt
+            return response()->json([
+                'success' => true,
+                'order' => [
+                    'order_number' => $order->order_number,
+                    'created_at' => $order->created_at->format('M d, Y h:i A'),
+                    'items' => $validated['items'],
+                    'subtotal' => $subtotal,
+                    'discount_percent' => $discountPercent,
+                    'discount_amount' => $discountAmount,
+                    'total' => $total,
+                    'payment_method' => $validated['payment_method'],
+                    'amount_received' => $amountReceived,
+                    'change_amount' => $changeAmount,
+                    'reference_number' => $validated['reference_number'] ?? null,
+                    'cashier' => Auth::user()->name,
+                ],
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
-            return redirect()->back()->with('error', 'Failed to create order. Please try again.');
+            \Illuminate\Support\Facades\Log::error('Order creation failed: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error($e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to create order. Please try again.',
+                'error' => $e->getMessage() // Return error message for debugging
+            ], 500);
         }
     }
 }

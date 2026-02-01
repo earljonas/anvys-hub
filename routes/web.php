@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Controllers\POSController;
+use App\Http\Controllers\ReportsController;
 
 // Root redirect
 Route::get('/', [HomeController::class, 'index']);
@@ -29,7 +30,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', fn() => Inertia::render('admin/Dashboard'))->name('admin.dashboard');
     Route::get('/inventory', fn() => Inertia::render('admin/Inventory'));
     Route::get('/employees', fn() => Inertia::render('admin/Employees'));
-    Route::get('/reports', fn() => Inertia::render('admin/Reports'));
+    Route::get('/reports', [ReportsController::class, 'index'])->name('admin.reports');
     Route::get('/settings', fn() => Inertia::render('admin/Settings'));
     Route::get('/attendance', fn() => Inertia::render('admin/Attendance'));
     Route::get('/payroll', fn() => Inertia::render('admin/Payroll'));

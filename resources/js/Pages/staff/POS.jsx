@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import StaffLayout from '../../Layouts/StaffLayout';
 import { Search } from 'lucide-react';
 import CategoryTab from '../../Components/POS/CategoryTab';
 import ProductCard from '../../Components/POS/ProductCard';
 import CustomizeModal from '../../Components/POS/CustomizeModal';
 import CartSidebar from '../../Components/POS/CartSidebar';
+import PaymentModal from '../../Components/POS/PaymentModal';
+import ReceiptModal from '../../Components/POS/ReceiptModal';
 
 const POS = ({ categories, products }) => {
     const { flash } = usePage().props;
@@ -22,6 +24,11 @@ const POS = ({ categories, products }) => {
     const [search, setSearch] = useState("");
     const [discount, setDiscount] = useState(0);
     const [isProcessing, setIsProcessing] = useState(false);
+
+    // Payment flow state
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showReceiptModal, setShowReceiptModal] = useState(false);
+    const [completedOrder, setCompletedOrder] = useState(null);
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => (activeCategory === 'all' || p.category === activeCategory) && p.name.toLowerCase().includes(search.toLowerCase()));
@@ -85,10 +92,14 @@ const POS = ({ categories, products }) => {
     const discountAmount = (subtotal * discount) / 100;
     const total = subtotal - discountAmount;
 
-    // Process payment - send order to backend
+    // Open payment modal instead of direct processing
     const handleProcessPayment = () => {
         if (cart.length === 0) return;
+        setShowPaymentModal(true);
+    };
 
+    // Handle payment confirmation from PaymentModal
+    const handleConfirmPayment = async (paymentData) => {
         setIsProcessing(true);
 
         // Prepare items for backend
@@ -99,22 +110,51 @@ const POS = ({ categories, products }) => {
             unit_price: item.finalPrice,
             addons_data: item.addons || null,
             total_price: item.finalPrice * (item.quantity || 1),
+            product_name: item.name,
+            size_name: item.size?.name || null,
         }));
 
-        router.post('/staff/pos/orders', {
-            items,
-            discount,
-        }, {
-            preserveScroll: true,
-            onSuccess: () => {
-                setCart([]);
-                setDiscount(0);
-                setIsProcessing(false);
-            },
-            onError: () => {
-                setIsProcessing(false);
-            },
-        });
+        try {
+            const payload = {
+                items,
+                discount,
+                payment_method: paymentData.paymentMethod,
+                amount_received: paymentData.amountReceived,
+                reference_number: paymentData.referenceNumber,
+            };
+
+            const response = await window.axios.post('/staff/pos/orders', payload);
+            const data = response.data;
+
+            if (data.success) {
+                setShowPaymentModal(false);
+                setCompletedOrder(data.order);
+                setShowReceiptModal(true);
+            } else {
+                console.error('Payment failed:', data);
+                const msg = data.message || 'Payment failed. Please try again.';
+                alert(msg + (data.errors ? '\n' + JSON.stringify(data.errors) : ''));
+            }
+        } catch (error) {
+            console.error('Payment error:', error);
+            if (error.response) {
+                const data = error.response.data;
+                const msg = data.message || 'Payment failed. Please try again.';
+                alert(msg + (data.errors ? '\n' + JSON.stringify(data.errors) : ''));
+            } else {
+                alert('Payment failed. Please check your connection.');
+            }
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // Handle new order after receipt
+    const handleNewOrder = () => {
+        setCart([]);
+        setDiscount(0);
+        setCompletedOrder(null);
+        setShowReceiptModal(false);
     };
 
     return (
@@ -181,13 +221,34 @@ const POS = ({ categories, products }) => {
 
             </div>
 
-            {/* Modal */}
+            {/* Customize Product Modal */}
             <CustomizeModal
                 product={selectedProduct}
                 isOpen={!!selectedProduct}
                 onClose={handleModalClose}
                 onAddToCart={saveToCart}
                 initialData={editingItem}
+            />
+
+            {/* Payment Modal */}
+            <PaymentModal
+                isOpen={showPaymentModal}
+                onClose={() => setShowPaymentModal(false)}
+                cart={cart}
+                subtotal={subtotal}
+                discountPercent={discount}
+                discountAmount={discountAmount}
+                total={total}
+                onConfirmPayment={handleConfirmPayment}
+                isProcessing={isProcessing}
+            />
+
+            {/* Receipt Modal */}
+            <ReceiptModal
+                isOpen={showReceiptModal}
+                onClose={() => setShowReceiptModal(false)}
+                order={completedOrder}
+                onNewOrder={handleNewOrder}
             />
         </div>
     );

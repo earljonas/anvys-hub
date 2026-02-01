@@ -16,6 +16,10 @@ class Order extends Model
         'discount_amount',
         'total',
         'status',
+        'payment_method',
+        'amount_received',
+        'change_amount',
+        'reference_number',
         'created_by',
     ];
 
@@ -24,6 +28,8 @@ class Order extends Model
         'discount_percent' => 'decimal:2',
         'discount_amount' => 'decimal:2',
         'total' => 'decimal:2',
+        'amount_received' => 'decimal:2',
+        'change_amount' => 'decimal:2',
     ];
 
     /**

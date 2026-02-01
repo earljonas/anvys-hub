@@ -1,7 +1,8 @@
 import React from 'react';
-import { MapPin, Store, Edit2, Trash2 } from 'lucide-react';
+import { MapPin, Store, Edit2, Archive } from 'lucide-react';
 
 const LocationCard = ({ location, onView, onEdit, onDelete }) => {
+    const count = location.staffCount || 0;
     return (
         <div
             onClick={() => onView(location)}
@@ -32,11 +33,12 @@ const LocationCard = ({ location, onView, onEdit, onDelete }) => {
             {/* Footer */}
             <div className="flex items-center justify-between pt-3 border-t border-[hsl(var(--border))]">
                 <span className="text-sm text-[hsl(var(--muted-foreground))]">
-                    {location.staffCount || 0} staff members
+                    {count === 0
+                        ? "No staff assigned"
+                        : `${count} ${count === 1 ? "staff member" : "staff members"}`}
                 </span>
 
                 <div className="flex">
-
                     <button
                         onClick={(e) => { e.stopPropagation(); onEdit(location); }}
                         className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
@@ -49,7 +51,7 @@ const LocationCard = ({ location, onView, onEdit, onDelete }) => {
                         className="p-2 hover:bg-red-50 rounded-lg text-red-500 hover:text-red-600 transition-colors cursor-pointer"
                         title="Archive"
                     >
-                        <Trash2 size={16} />
+                        <Archive size={16} />
                     </button>
                 </div>
             </div>

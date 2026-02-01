@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductAddon;
+use App\Models\Addon; // Changed from ProductAddon
 use App\Models\ProductSize;
 use Illuminate\Database\Seeder;
 
@@ -39,8 +39,9 @@ class POSSeeder extends Seeder
             ['name' => '1 Liter', 'price' => 200, 'sort_order' => 4],
         ];
 
-        // Ice Scramble Addons (shared across all scramble products)
-        $scrambleAddons = [
+        // Create Shared Addons (Created ONCE)
+        $addons = [];
+        $scrambleAddonNames = [
             ['name' => 'Milk', 'price' => 10],
             ['name' => 'Marshmallows', 'price' => 10],
             ['name' => 'Sprinkles', 'price' => 10],
@@ -48,10 +49,23 @@ class POSSeeder extends Seeder
             ['name' => 'Graham', 'price' => 10],
             ['name' => 'Oreo', 'price' => 10],
         ];
+        
+        foreach ($scrambleAddonNames as $a) {
+            $addons[$a['name']] = Addon::create($a);
+        }
+
+        $sodaAddonNames = [
+            ['name' => 'Yakult', 'price' => 15],
+            ['name' => 'Fruit Jelly', 'price' => 15],
+        ];
+
+        foreach ($sodaAddonNames as $a) {
+             $addons[$a['name']] = Addon::create($a);
+        }
 
         // Create Ice Scramble Products
         $scrambleFlavors = ['Strawberry', 'Chocolate', 'Ube', 'Pandan', 'Melon', 'Mango Graham'];
-
+        
         foreach ($scrambleFlavors as $flavor) {
             $product = Product::create([
                 'category_id' => $scrambleCategory->id,
@@ -72,19 +86,15 @@ class POSSeeder extends Seeder
                 ]);
             }
 
-            // Add addons
-            foreach ($scrambleAddons as $addon) {
-                ProductAddon::create([
-                    'product_id' => $product->id,
-                    'name' => $addon['name'],
-                    'price' => $addon['price'],
-                ]);
-            }
+            // Attach shared addons
+            // Get IDs of scramble addons
+            $scrambleAddonIds = collect($scrambleAddonNames)->map(fn($a) => $addons[$a['name']]->id);
+            $product->addons()->attach($scrambleAddonIds);
         }
 
         // Create Frappe Products (no sizes, no addons)
         $frappeFlavors = ['Cookies & Cream', 'Cappuccino', 'Chocolate'];
-
+        
         foreach ($frappeFlavors as $flavor) {
             Product::create([
                 'category_id' => $frappeCategory->id,
@@ -96,15 +106,9 @@ class POSSeeder extends Seeder
             ]);
         }
 
-        // Fruit Soda Addons
-        $sodaAddons = [
-            ['name' => 'Yakult', 'price' => 15],
-            ['name' => 'Fruit Jelly', 'price' => 15],
-        ];
-
         // Create Fruit Soda Products (with addons, no sizes)
         $sodaFlavors = ['Strawberry', 'Green Apple', 'Four Seasons', 'Lychee', 'Blueberry'];
-
+        
         foreach ($sodaFlavors as $flavor) {
             $product = Product::create([
                 'category_id' => $sodaCategory->id,
@@ -115,14 +119,9 @@ class POSSeeder extends Seeder
                 'is_active' => true,
             ]);
 
-            // Add addons
-            foreach ($sodaAddons as $addon) {
-                ProductAddon::create([
-                    'product_id' => $product->id,
-                    'name' => $addon['name'],
-                    'price' => $addon['price'],
-                ]);
-            }
+            // Attach soda addons
+            $sodaAddonIds = collect($sodaAddonNames)->map(fn($a) => $addons[$a['name']]->id);
+            $product->addons()->attach($sodaAddonIds);
         }
     }
 }
