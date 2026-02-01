@@ -1,44 +1,31 @@
 import React, { useState, useMemo } from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import StaffLayout from '../../Layouts/StaffLayout';
-import { ShoppingCart, Trash2, Search, Heart, Minus, Plus, CreditCard, RotateCcw } from 'lucide-react';
+import { Search } from 'lucide-react';
 import CategoryTab from '../../Components/POS/CategoryTab';
 import ProductCard from '../../Components/POS/ProductCard';
 import CustomizeModal from '../../Components/POS/CustomizeModal';
-import Button from '../../Components/common/Button';
+import CartSidebar from '../../Components/POS/CartSidebar';
 
-const POS = () => {
-    const categories = [
-        { id: 'all', name: 'All Menu' },
-        { id: 'scramble', name: 'Ice Scramble' },
-        { id: 'frappe', name: 'Frappes' },
-        { id: 'soda', name: 'Fruit Soda' },
-    ];
-
-    const products = [
-        ...['Strawberry', 'Chocolate', 'Ube', 'Pandan', 'Melon', 'Mango Graham'].map((f, i) => ({
-            id: `scramble-${i}`, name: `${f} Ice Scramble`, category: 'scramble', basePrice: 100, hasSizes: true, flavor: f,
-            sizes: [{ name: 'Small', price: 100 }, { name: 'Medium', price: 110 }, { name: 'Large', price: 120 }, { name: '1 Liter', price: 200 }],
-            addons: [{ name: 'Milk', price: 10 }, { name: 'Marshmallows', price: 10 }, { name: 'Sprinkles', price: 10 }, { name: 'Nips', price: 10 }, { name: 'Graham', price: 10 }, { name: 'Oreo', price: 10 }]
-        })),
-        ...['Cookies & Cream', 'Cappuccino', 'Chocolate'].map((f, i) => ({
-            id: `frappe-${i}`, name: `${f} Frappe`, category: 'frappe', basePrice: 149, flavor: f
-        })),
-        ...['Strawberry', 'Green Apple', 'Four Seasons', 'Lychee', 'Blueberry'].map((f, i) => ({
-            id: `soda-${i}`, name: `${f} Fruit Soda`, category: 'soda', basePrice: 59, flavor: f,
-            addons: [{ name: 'Yakult', price: 15 }, { name: 'Fruit Jelly', price: 15 }]
-        }))
-    ];
+const POS = ({ categories, products }) => {
+    const { flash } = usePage().props;
 
     const [cart, setCart] = useState([]);
     const [activeCategory, setActiveCategory] = useState('all');
+
+    // selectedProduct triggers the modal to open
     const [selectedProduct, setSelectedProduct] = useState(null);
+
+    // editingItem tracks if we are modifying an existing cart item
+    const [editingItem, setEditingItem] = useState(null);
+
     const [search, setSearch] = useState("");
     const [discount, setDiscount] = useState(0);
+    const [isProcessing, setIsProcessing] = useState(false);
 
     const filteredProducts = useMemo(() => {
         return products.filter(p => (activeCategory === 'all' || p.category === activeCategory) && p.name.toLowerCase().includes(search.toLowerCase()));
-    }, [activeCategory, search]);
+    }, [activeCategory, search, products]);
 
     const handleQuantityChange = (uniqueId, change) => {
         setCart(cart.map(item => {
@@ -54,8 +41,37 @@ const POS = () => {
         setCart(cart.filter(c => c.uniqueId !== uniqueId));
     };
 
-    const addToCart = (item) => {
-        setCart([...cart, { ...item, quantity: 1 }]);
+    // Triggered when clicking the Edit (Pencil) icon in sidebar
+    const handleEditCartItem = (cartItem) => {
+        // Find the original product definition to pass to the modal
+        const originalProduct = products.find(p => p.id === cartItem.id) || cartItem;
+
+        setEditingItem(cartItem);      // Set the item being edited
+        setSelectedProduct(originalProduct); // Open the modal with this product
+    };
+
+    // Central function to handle Adding OR Updating items
+    const saveToCart = (itemData) => {
+        if (editingItem) {
+            // EDIT MODE: Update the existing item in the cart
+            setCart(cart.map(item =>
+                item.uniqueId === editingItem.uniqueId
+                    ? { ...itemData, uniqueId: editingItem.uniqueId, quantity: editingItem.quantity } // Keep original ID and Qty
+                    : item
+            ));
+            setEditingItem(null); // Clear edit mode
+        } else {
+            // ADD MODE: Push new item
+            const newItem = { ...itemData, quantity: 1 };
+            setCart([...cart, newItem]);
+        }
+
+        setSelectedProduct(null); // Close modal
+    };
+
+    const handleModalClose = () => {
+        setSelectedProduct(null);
+        setEditingItem(null); // Ensure edit mode is cleared if they close without saving
     };
 
     const clearCart = () => {
@@ -69,15 +85,60 @@ const POS = () => {
     const discountAmount = (subtotal * discount) / 100;
     const total = subtotal - discountAmount;
 
+    // Process payment - send order to backend
+    const handleProcessPayment = () => {
+        if (cart.length === 0) return;
+
+        setIsProcessing(true);
+
+        // Prepare items for backend
+        const items = cart.map(item => ({
+            product_id: item.id,
+            product_size_id: item.size?.id || null,
+            quantity: item.quantity || 1,
+            unit_price: item.finalPrice,
+            addons_data: item.addons || null,
+            total_price: item.finalPrice * (item.quantity || 1),
+        }));
+
+        router.post('/staff/pos/orders', {
+            items,
+            discount,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setCart([]);
+                setDiscount(0);
+                setIsProcessing(false);
+            },
+            onError: () => {
+                setIsProcessing(false);
+            },
+        });
+    };
+
     return (
-        <div className="h-[calc(100vh-6rem)] flex flex-col gap-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500">
             <Head title="POS System" />
+
+            {/* Flash Messages */}
+            {flash?.success && (
+                <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg">
+                    {flash.success}
+                </div>
+            )}
+            {flash?.error && (
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                    {flash.error}
+                </div>
+            )}
+
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 h-full overflow-hidden">
 
                 {/* Product Grid Area (Left) */}
-                <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full gap-6">
+                <div className="lg:col-span-8 xl:col-span-9 flex flex-col h-full gap-4">
                     {/* Header / Filter Bar */}
-                    <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-2xl border border-border shadow-sm gap-4">
+                    <div className="flex flex-col sm:flex-row justify-between items-center bg-white p-2 rounded-2xl border border-[hsl(var(--border))] shadow-sm gap-4">
                         <div className="flex gap-2 p-1 overflow-x-auto w-full sm:w-auto no-scrollbar">
                             {categories.map(cat => <CategoryTab key={cat.id} category={cat} active={activeCategory} onClick={setActiveCategory} />)}
                         </div>
@@ -87,7 +148,7 @@ const POS = () => {
                                 onChange={(e) => setSearch(e.target.value)}
                                 type="text"
                                 placeholder="Search menu..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-muted rounded-xl border-transparent focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] text-sm transition-all"
+                                className="w-full pl-10 pr-4 py-2 bg-white border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] text-sm text-[hsl(var(--foreground))] placeholder:text-[hsl(var(--muted-foreground))]"
                             />
                         </div>
                     </div>
@@ -101,131 +162,33 @@ const POS = () => {
                 </div>
 
                 {/* Cart Sidebar (Right) */}
-                <div className="lg:col-span-4 xl:col-span-3 bg-white rounded-[1.5rem] border border-border shadow-lg flex flex-col h-full overflow-hidden relative">
-                    <div className="p-5 border-b border-border flex items-center gap-3 bg-white">
-                        <ShoppingCart size={24} className="text-[hsl(var(--foreground))]" />
-                        <h2 className="font-bold text-xl text-[hsl(var(--foreground))]">Cart ({cart.length})</h2>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white custom-scrollbar-thin">
-                        {cart.length === 0 ? (
-                            <div className="h-full flex flex-col items-center justify-center text-muted-foreground/50 gap-4">
-                                <ShoppingCart size={48} strokeWidth={1.5} />
-                                <p className="font-medium text-sm">No items in cart</p>
-                            </div>
-                        ) : (
-                            cart.map((item) => (
-                                <div key={item.uniqueId} className="bg-white p-4 rounded-xl border border-border/60 hover:border-[hsl(var(--primary))]/50 group transition-all relative">
-                                    <button
-                                        onClick={() => removeFromCart(item.uniqueId)}
-                                        className="absolute top-4 right-4 text-muted-foreground hover:text-red-500 transition-colors"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-
-                                    <div className="pr-6">
-                                        <h4 className="font-bold text-sm text-[hsl(var(--foreground))] leading-tight mb-1">{item.name}</h4>
-                                        <p className="text-xs text-muted-foreground mb-1">{item.flavor || 'Original'}</p>
-
-                                        {/* Addons Display */}
-                                        <div className="text-[10px] text-muted-foreground mb-3 flex flex-wrap gap-1">
-                                            {Object.entries(item.addons).some(([, q]) => q > 0) && (
-                                                <span className="font-medium">+ </span>
-                                            )}
-                                            {Object.entries(item.addons).map(([n, q], idx, arr) => (
-                                                q > 0 && <span key={n}>{n}{idx < arr.length - 1 ? ', ' : ''}</span>
-                                            ))}
-                                        </div>
-                                    </div>
-
-                                    {/* Quantity and Price */}
-                                    <div className="flex items-center justify-between mt-2">
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={() => handleQuantityChange(item.uniqueId, -1)}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-[hsl(var(--foreground))] transition-colors"
-                                            >
-                                                <Minus size={14} />
-                                            </button>
-                                            <span className="font-bold text-sm min-w-[1rem] text-center">{item.quantity || 1}</span>
-                                            <button
-                                                onClick={() => handleQuantityChange(item.uniqueId, 1)}
-                                                className="w-8 h-8 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-muted hover:text-[hsl(var(--foreground))] transition-colors"
-                                            >
-                                                <Plus size={14} />
-                                            </button>
-                                        </div>
-                                        {/* Currently displaying unit price * quantity or just unit? Usually item total in cart line */}
-                                        {/* Let's show unit price if quantity > 1 ?? Or just total? The ref image shows 120.00 total at bottom, but cart items usually don't show per-line total in some simplified views, but good to have. 
-                                            Image doesn't show price per item clearly, just subtotal. I'll hide per-item price or make it subtle if needed. 
-                                            Actually, let's keep it simple. */}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    {/* Discount & Totals Section */}
-                    <div className="p-5 bg-[hsl(var(--card))] border-t border-border space-y-4">
-
-                        <div className="space-y-1.5">
-                            <label className="text-xs font-bold text-[hsl(var(--foreground))]">Discount (%)</label>
-                            <input
-                                type="number"
-                                min="0"
-                                max="100"
-                                value={discount}
-                                onChange={(e) => setDiscount(Math.min(100, Math.max(0, Number(e.target.value))))}
-                                className="w-full px-3 py-2 rounded-lg border border-border bg-white text-sm focus:ring-1 focus:ring-[hsl(var(--primary))] focus:border-[hsl(var(--primary))] outline-none transition-all"
-                                placeholder="0"
-                            />
-                        </div>
-
-                        <div className="h-px bg-border my-2" />
-
-                        <div className="space-y-2">
-                            <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Subtotal:</span>
-                                <span className="font-medium">₱{subtotal.toFixed(2)}</span>
-                            </div>
-                            {discount > 0 && (
-                                <div className="flex justify-between items-center text-sm text-[hsl(var(--primary))]">
-                                    <span className="">Discount ({discount}%):</span>
-                                    <span>-₱{discountAmount.toFixed(2)}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between items-center text-xl font-black text-[hsl(var(--foreground))] pt-2">
-                                <span>Total:</span>
-                                <span>₱{total.toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col gap-3 pt-2">
-                            <Button
-                                variant="primary"
-                                size="lg"
-                                onClick={() => alert('Process Payment Clicked')} // Placeholder for now or keep empty/disabled logic
-                                disabled={cart.length === 0}
-                                className="w-full rounded-xl py-3 text-base shadow-md"
-                                icon={CreditCard}
-                            >
-                                Process Payment
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                onClick={clearCart}
-                                disabled={cart.length === 0}
-                                className="w-full rounded-xl py-3 text-base"
-                                icon={RotateCcw}
-                            >
-                                Clear Cart
-                            </Button>
-                        </div>
-                    </div>
+                <div className="lg:col-span-4 xl:col-span-3">
+                    <CartSidebar
+                        cart={cart}
+                        discount={discount}
+                        setDiscount={setDiscount}
+                        subtotal={subtotal}
+                        discountAmount={discountAmount}
+                        total={total}
+                        onQuantityChange={handleQuantityChange}
+                        onRemove={removeFromCart}
+                        onEdit={handleEditCartItem}
+                        onClear={clearCart}
+                        onProcessPayment={handleProcessPayment}
+                        isProcessing={isProcessing}
+                    />
                 </div>
+
             </div>
-            <CustomizeModal product={selectedProduct} isOpen={!!selectedProduct} onClose={() => setSelectedProduct(null)} onAddToCart={(item) => addToCart(item)} />
+
+            {/* Modal */}
+            <CustomizeModal
+                product={selectedProduct}
+                isOpen={!!selectedProduct}
+                onClose={handleModalClose}
+                onAddToCart={saveToCart}
+                initialData={editingItem}
+            />
         </div>
     );
 };

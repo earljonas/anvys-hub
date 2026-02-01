@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\HomeController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\EmployeeController;
+use App\Http\Controllers\POSController;
 
 // Root redirect
 Route::get('/', [HomeController::class, 'index']);
@@ -56,6 +57,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 // Staff Routes
 Route::prefix('staff')->middleware('auth')->group(function () {
     Route::get('/attendance', fn() => Inertia::render('staff/StaffAttendance'))->name('staff.attendance');
-    Route::get('/pos', fn() => Inertia::render('staff/POS'))->name('staff.pos');
+    Route::get('/pos', [POSController::class, 'index'])->name('staff.pos');
+    Route::post('/pos/orders', [POSController::class, 'storeOrder'])->name('staff.pos.order');
     Route::get('/inventory', fn() => Inertia::render('staff/StaffInventory'))->name('staff.inventory');
 });

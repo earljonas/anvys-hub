@@ -1,16 +1,30 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { X, Plus, Minus } from 'lucide-react';
+import Button from '../common/Button'; // Assuming this exists based on your reference
 
-export default function CustomizeModal({ product, isOpen, onClose, onAddToCart }) {
+export default function CustomizeModal({ product, isOpen, onClose, onAddToCart, initialData }) {
     if (!isOpen || !product) return null;
 
     const [size, setSize] = useState(product.sizes ? product.sizes[0] : null);
     const [addons, setAddons] = useState({});
 
     useEffect(() => {
-        setSize(product.sizes ? product.sizes[0] : null);
-        setAddons({});
-    }, [product]);
+        if (isOpen) {
+            if (initialData) {
+                // EDIT MODE: Find matching size object and load addons
+                const savedSize = product.sizes
+                    ? product.sizes.find(s => s.name === initialData.size?.name)
+                    : null;
+
+                setSize(savedSize || (product.sizes ? product.sizes[0] : null));
+                setAddons(initialData.addons || {});
+            } else {
+                // ADD MODE: Reset
+                setSize(product.sizes ? product.sizes[0] : null);
+                setAddons({});
+            }
+        }
+    }, [isOpen, product, initialData]);
 
     const addonTotal = Object.entries(addons).reduce((sum, [name, qty]) => {
         const info = product.addons?.find(a => a.name === name);
@@ -23,42 +37,95 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart }
         setAddons(prev => ({ ...prev, [name]: Math.max(0, (prev[name] || 0) + delta) }));
     };
 
+    const handleSave = (e) => {
+        e.preventDefault();
+        const itemData = {
+            ...product,
+            uniqueId: initialData ? initialData.uniqueId : Date.now().toString(),
+            size,
+            addons,
+            finalPrice
+        };
+        onAddToCart(itemData);
+        onClose();
+    };
+
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
-                <div className="p-6 border-b flex justify-between items-center bg-[hsl(var(--muted))]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-lg mx-4 overflow-hidden border border-[hsl(var(--border))] flex flex-col max-h-[90vh]">
+
+                {/* Header */}
+                <div className="flex justify-between items-center p-4 border-b border-[hsl(var(--border))]">
                     <div>
-                        <h2 className="text-xl font-black text-[hsl(var(--foreground))]">{product.name}</h2>
-                        <span className="text-xs font-bold text-[hsl(var(--primary))] uppercase tracking-widest">Options & Toppings</span>
+                        <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">{product.name}</h3>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors"><X size={24} /></button>
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                    >
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <div className="overflow-y-auto p-6 space-y-8 flex-1">
+                {/* Body (Scrollable) */}
+                <div className="p-6 space-y-6 overflow-y-auto flex-1">
+
+                    {/* Size Selector */}
                     {product.sizes && (
                         <div>
-                            <h3 className="text-xs font-black text-[hsl(var(--muted-foreground))] uppercase mb-4">Select Size</h3>
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Size</label>
                             <div className="grid grid-cols-2 gap-3">
                                 {product.sizes.map(s => (
-                                    <button key={s.name} onClick={() => setSize(s)} className={`p-4 rounded-2xl border-2 font-black transition-all ${size?.name === s.name ? 'border-[hsl(var(--primary))] bg-pink-50 text-[hsl(var(--primary))]' : 'border-border'}`}>
-                                        {s.name} • ₱{s.price}
+                                    <button
+                                        key={s.name}
+                                        onClick={() => setSize(s)}
+                                        className={`
+                                            px-4 py-3 rounded-lg border text-left transition-all
+                                            ${size?.name === s.name
+                                                ? 'border-[hsl(var(--primary))] bg-pink-50 ring-1 ring-[hsl(var(--primary))]'
+                                                : 'border-[hsl(var(--border))] hover:bg-slate-50'}
+                                        `}
+                                    >
+                                        <div className="font-semibold text-sm">{s.name}</div>
+                                        <div className="text-xs text-[hsl(var(--muted-foreground))]">₱{s.price}</div>
                                     </button>
                                 ))}
                             </div>
                         </div>
                     )}
 
+                    {/* Add-ons Selector */}
                     {product.addons && (
                         <div>
-                            <h3 className="text-xs font-black text-[hsl(var(--muted-foreground))] uppercase mb-4">Add-ons (+₱10-15)</h3>
-                            <div className="space-y-3">
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-2">Add-ons</label>
+                            <div className="space-y-2">
                                 {product.addons.map(addon => (
-                                    <div key={addon.name} className="flex justify-between items-center p-4 rounded-2xl border border-border bg-white shadow-sm">
-                                        <span className="font-bold text-sm">{addon.name} (+₱{addon.price})</span>
-                                        <div className="flex items-center gap-4">
-                                            <button onClick={() => updateAddon(addon.name, -1)} className="w-9 h-9 rounded-full bg-muted flex items-center justify-center hover:bg-gray-200"><Minus size={18} /></button>
-                                            <span className="font-black text-lg w-4 text-center">{addons[addon.name] || 0}</span>
-                                            <button onClick={() => updateAddon(addon.name, 1)} className="w-9 h-9 rounded-full bg-[hsl(var(--primary))] text-white flex items-center justify-center hover:brightness-110 shadow-lg shadow-pink-100"><Plus size={18} /></button>
+                                    <div
+                                        key={addon.name}
+                                        className="flex items-center justify-between p-3 border border-[hsl(var(--border))] rounded-lg bg-white"
+                                    >
+                                        <div>
+                                            <div className="font-medium text-sm">{addon.name}</div>
+                                            <div className="text-xs text-[hsl(var(--muted-foreground))]">+₱{addon.price}</div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3">
+                                            <button
+                                                onClick={() => updateAddon(addon.name, -1)}
+                                                disabled={!addons[addon.name]}
+                                                className="w-8 h-8 rounded flex items-center justify-center border hover:bg-slate-100 disabled:opacity-50"
+                                            >
+                                                <Minus size={14} />
+                                            </button>
+                                            <span className="w-6 text-center font-bold text-sm">
+                                                {addons[addon.name] || 0}
+                                            </span>
+                                            <button
+                                                onClick={() => updateAddon(addon.name, 1)}
+                                                className="w-8 h-8 rounded flex items-center justify-center border bg-slate-50 hover:bg-slate-100"
+                                            >
+                                                <Plus size={14} />
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -67,14 +134,20 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart }
                     )}
                 </div>
 
-                <div className="p-6 border-t bg-[hsl(var(--muted))] flex justify-between items-center">
+                {/* Footer */}
+                <div className="p-4 border-t border-[hsl(var(--border))] bg-slate-50 flex items-center justify-between">
                     <div>
-                        <p className="text-[10px] font-black text-[hsl(var(--muted-foreground))] uppercase">Total</p>
-                        <p className="text-3xl font-black text-[hsl(var(--primary))]">₱{finalPrice}</p>
+                        <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase block">Total Price</span>
+                        <span className="text-2xl font-black text-[hsl(var(--primary))]">₱{finalPrice.toFixed(2)}</span>
                     </div>
-                    <button onClick={() => { onAddToCart({ ...product, uniqueId: Date.now(), size, addons, finalPrice }); onClose(); }} className="bg-[hsl(var(--primary))] text-white px-10 py-4 rounded-2xl font-black flex items-center gap-3 hover:scale-105 transition-all shadow-xl shadow-pink-200">
-                        <ShoppingBag size={20} /> ADD TO CART
-                    </button>
+                    <div className="flex gap-3">
+                        <Button variant="ghost" onClick={onClose}>
+                            Cancel
+                        </Button>
+                        <Button variant="primary" onClick={handleSave}>
+                            {initialData ? 'Update Order' : 'Add to Cart'}
+                        </Button>
+                    </div>
                 </div>
             </div>
         </div>
