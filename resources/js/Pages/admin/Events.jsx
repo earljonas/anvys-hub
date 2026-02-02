@@ -9,12 +9,6 @@ import DayDetailsModal from '../../Components/events/DayDetailsModal';
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
 
-const PACKAGES = [
-    { id: 'sweet', name: 'Sweet Celebration' },
-    { id: 'grand', name: 'Grand Fiesta' },
-    { id: 'ultimate', name: 'Ultimate Party' },
-];
-
 const Events = () => {
     const today = new Date();
     const [currentDate, setCurrentDate] = useState(today);
@@ -26,7 +20,7 @@ const Events = () => {
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isDayModalOpen, setIsDayModalOpen] = useState(false);
 
-    const { events: initialEvents = [] } = usePage().props;
+    const { events: initialEvents = [], packages = [] } = usePage().props;
     const [events, setEvents] = useState(initialEvents);
 
     React.useEffect(() => {
@@ -218,7 +212,7 @@ const Events = () => {
                                             </span>
                                         </div>
                                         <p className="text-sm text-[hsl(var(--muted-foreground))] mb-2">
-                                            {PACKAGES.find(p => p.id === event.packageId)?.name || 'Custom Event'}
+                                            {event.packageName || packages.find(p => p.id === event.packageId)?.name || 'Custom Event'}
                                         </p>
                                         <div className="flex items-center gap-4 text-xs text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-2 mt-2">
                                             <span className="flex items-center gap-1"><Clock size={12} /> {event.eventTime}</span>
@@ -248,6 +242,7 @@ const Events = () => {
                 event={selectedEvent}
                 selectedDate={selectedDate}
                 onSave={handleSaveEvent}
+                packages={packages}
             />
         </div>
     );

@@ -2,12 +2,6 @@ import React from 'react';
 import { X, Plus, Calendar as CalendarIcon } from 'lucide-react';
 import Button from '../common/Button';
 
-const PACKAGES = [
-    { id: 'sweet', name: 'Sweet Celebration' },
-    { id: 'grand', name: 'Grand Fiesta' },
-    { id: 'ultimate', name: 'Ultimate Party' },
-];
-
 const DayDetailsModal = ({ isOpen, onClose, date, events, onAddEvent, onViewEvent }) => {
     if (!isOpen || !date) return null;
 
@@ -51,7 +45,7 @@ const DayDetailsModal = ({ isOpen, onClose, date, events, onAddEvent, onViewEven
                                         </span>
                                     </div>
                                     <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                                        {PACKAGES.find(p => p.id === event.packageId)?.name || 'Event'}
+                                        {event.packageName || 'Event'}
                                     </p>
                                 </div>
                             ))}

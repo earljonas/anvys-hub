@@ -13,7 +13,7 @@ class Event extends Model
         'customer_name',
         'address',
         'contact_number',
-        'package_id',
+        'event_package_id',
         'event_date',
         'event_time',
         'extra_guests',
@@ -25,4 +25,9 @@ class Event extends Model
         'event_date' => 'date',
         'total_price' => 'decimal:2',
     ];
+
+    public function package()
+    {
+        return $this->belongsTo(EventPackage::class, 'event_package_id');
+    }
 }

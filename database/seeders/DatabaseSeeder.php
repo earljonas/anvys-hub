@@ -103,5 +103,14 @@ class DatabaseSeeder extends Seeder
             'daily_rate' => 380.00,
             'status' => 'Active',
         ]);
+
+        // 5. Run POS Seeder
+        $this->call([
+            POSSeeder::class,
+        ]);
+        // 6. Run Event Package Seeder
+        $this->call([
+            EventPackageSeeder::class,
+        ]);
     }
 }

@@ -3,56 +3,60 @@ import { X, User, MapPin, Phone, Package, Calendar, Clock, Users, CreditCard, Ed
 import Button from '../common/Button';
 import Input from '../common/Input';
 
-const PACKAGES = [
-    { id: 'sweet', name: 'Sweet Celebration', price: 4200, capacity: 60, extraRate: 70 },
-    { id: 'grand', name: 'Grand Fiesta', price: 5250, capacity: 75, extraRate: 70 },
-    { id: 'ultimate', name: 'Ultimate Party', price: 6800, capacity: 100, extraRate: 68 },
-];
-
-const EventModal = ({ isOpen, onClose, mode, event, selectedDate, onSave }) => {
+const EventModal = ({ isOpen, onClose, mode, event, selectedDate, onSave, packages = [] }) => {
     const [currentMode, setCurrentMode] = useState(mode);
     const [formData, setFormData] = useState({
         customerName: '',
         address: '',
         contactNumber: '',
-        packageId: 'sweet',
+        packageId: '',
         eventDate: '',
         eventTime: '12:00',
         extraGuests: 0,
-        totalPrice: 4200,
+        totalPrice: 0,
         paymentStatus: 'Pending'
     });
+
+    // Debug: Log packages to see what we're receiving
+    useEffect(() => {
+        console.log('Packages received:', packages);
+        console.log('Packages length:', packages?.length);
+    }, [packages]);
 
     useEffect(() => {
         setCurrentMode(mode);
         if (isOpen) {
             if (mode === 'add') {
                 const dateStr = selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+                // Default to first package if available
+                const defaultPackage = packages.length > 0 ? packages[0] : null;
+
                 setFormData({
                     customerName: '',
                     address: '',
                     contactNumber: '',
-                    packageId: 'sweet',
+                    packageId: defaultPackage ? defaultPackage.id : '',
                     eventDate: dateStr,
                     eventTime: '12:00',
                     extraGuests: 0,
-                    totalPrice: 4200,
+                    totalPrice: defaultPackage ? parseFloat(defaultPackage.price) : 0,
                     paymentStatus: 'Pending'
                 });
             } else if (event) {
                 setFormData({ ...event });
             }
         }
-    }, [isOpen, mode, event, selectedDate]);
+    }, [isOpen, mode, event, selectedDate, packages]);
 
     useEffect(() => {
-        const selectedPkg = PACKAGES.find(p => p.id === formData.packageId);
+        const selectedPkg = packages.find(p => p.id == formData.packageId);
         if (selectedPkg) {
-            const basePrice = selectedPkg.price;
-            const extraCost = (parseInt(formData.extraGuests) || 0) * selectedPkg.extraRate;
+            const basePrice = parseFloat(selectedPkg.price);
+            const extraRate = parseFloat(selectedPkg.extraGuestPrice);
+            const extraCost = (parseInt(formData.extraGuests) || 0) * extraRate;
             setFormData(prev => ({ ...prev, totalPrice: basePrice + extraCost }));
         }
-    }, [formData.packageId, formData.extraGuests]);
+    }, [formData.packageId, formData.extraGuests, packages]);
 
     if (!isOpen) return null;
 
@@ -105,17 +109,25 @@ const EventModal = ({ isOpen, onClose, mode, event, selectedDate, onSave }) => {
                                 </label>
                                 {isView ? (
                                     <p className="font-semibold text-[hsl(var(--primary))]">
-                                        {PACKAGES.find(p => p.id === formData.packageId)?.name}
+                                        {packages.find(p => p.id == formData.packageId)?.name || 'Unknown Package'}
                                     </p>
                                 ) : (
                                     <select
                                         className="w-full rounded-md border border-[hsl(var(--border))] bg-[hsl(var(--input))] px-3 py-2 text-sm focus:ring-2 focus:ring-[hsl(var(--ring))]"
                                         value={formData.packageId}
                                         onChange={e => setFormData({ ...formData, packageId: e.target.value })}
+                                        required
                                     >
-                                        {PACKAGES.map(p => (
-                                            <option key={p.id} value={p.id}>{p.name} (₱{p.price})</option>
-                                        ))}
+                                        <option value="">Select Package</option>
+                                        {packages && packages.length > 0 ? (
+                                            packages.map(p => (
+                                                <option key={p.id} value={p.id}>
+                                                    {p.name} ({p.cupsCount} cups - ₱{parseFloat(p.price).toLocaleString()})
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="" disabled>No packages available</option>
+                                        )}
                                     </select>
                                 )}
                             </div>
@@ -131,14 +143,14 @@ const EventModal = ({ isOpen, onClose, mode, event, selectedDate, onSave }) => {
                                     <Calendar size={14} /> Event Date
                                 </label>
                                 {isView ? <p className="font-medium">{formData.eventDate}</p> :
-                                    <Input type="date" value={formData.eventDate} onChange={e => setFormData({ ...formData, eventDate: e.target.value })} />}
+                                    <Input type="date" value={formData.eventDate} onChange={e => setFormData({ ...formData, eventDate: e.target.value })} required />}
                             </div>
                             <div>
                                 <label className="text-sm font-medium text-[hsl(var(--muted-foreground))] flex items-center gap-2 mb-1">
                                     <Clock size={14} /> Event Time
                                 </label>
                                 {isView ? <p className="font-medium">{formData.eventTime}</p> :
-                                    <Input type="time" value={formData.eventTime} onChange={e => setFormData({ ...formData, eventTime: e.target.value })} />}
+                                    <Input type="time" value={formData.eventTime} onChange={e => setFormData({ ...formData, eventTime: e.target.value })} required />}
                             </div>
                         </div>
 

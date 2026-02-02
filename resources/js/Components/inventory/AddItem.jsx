@@ -6,7 +6,7 @@ import Button from '../common/Button';
 const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
     const [formData, setFormData] = useState({
         name: '',
-        location: '',
+        locationId: '',
         stock: '',
         minStock: '',
         unit: 'pcs',
@@ -15,27 +15,17 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
 
     if (!isOpen) return null;
 
-    const calculateStatus = (stock, minStock) => {
-        const s = parseInt(stock) || 0;
-        const m = parseInt(minStock) || 0;
-        if (s === 0) return 'Out of Stock';
-        if (s <= m) return 'Low Stock';
-        return 'In Stock';
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
-        const newItem = {
-            ...formData,
-            id: Date.now(),
+        onAdd({
+            name: formData.name,
+            locationId: formData.locationId === '' || formData.locationId === 'all' ? null : parseInt(formData.locationId),
             stock: parseInt(formData.stock) || 0,
             minStock: parseInt(formData.minStock) || 0,
+            unit: formData.unit,
             costPerUnit: parseFloat(formData.costPerUnit) || 0,
-            status: calculateStatus(formData.stock, formData.minStock)
-        };
-        onAdd(newItem);
-        onClose();
-        setFormData({ name: '', location: '', stock: '', minStock: '', unit: 'pcs', costPerUnit: '' });
+        });
+        setFormData({ name: '', locationId: '', stock: '', minStock: '', unit: 'pcs', costPerUnit: '' });
     };
 
     return (
@@ -111,13 +101,13 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
                         <select
                             required
                             className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
-                            value={formData.location}
-                            onChange={e => setFormData({ ...formData, location: e.target.value })}
+                            value={formData.locationId}
+                            onChange={e => setFormData({ ...formData, locationId: e.target.value })}
                         >
                             <option value="">Select Location</option>
-                            <option value="All Locations">All Locations</option>
+                            <option value="all">All Locations</option>
                             {locations.map(loc => (
-                                <option key={loc} value={loc}>{loc}</option>
+                                <option key={loc.id} value={loc.id}>{loc.name}</option>
                             ))}
                         </select>
                     </div>
@@ -144,4 +134,3 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
 };
 
 export default AddItemModal;
-

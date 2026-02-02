@@ -17,21 +17,28 @@ const Sidebar = () => {
     const { url } = usePage()
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [employeesOpen, setEmployeesOpen] = useState(false)
+    const [reportsOpen, setReportsOpen] = useState(false)
 
     const navItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
         { name: 'Inventory', icon: Package, path: '/admin/inventory' },
         { name: 'Locations', icon: MapPin, path: '/admin/locations' },
         { name: 'Events', icon: Calendar, path: '/admin/events' },
-        { name: 'Reports', icon: FileText, path: '/admin/reports' },
     ]
 
     const employeePaths = ['/admin/roster', '/admin/attendance', '/admin/payroll']
+    const reportPaths = ['/admin/reports/sales', '/admin/reports/inventory', '/admin/reports/events', '/admin/reports/payroll']
+
     const isEmployeesActive = employeePaths.some(path => url.startsWith(path))
+    const isReportsActive = reportPaths.some(path => url.startsWith(path))
     const isActive = (path) => url.startsWith(path)
 
     useEffect(() => {
         setEmployeesOpen(isEmployeesActive)
+    }, [url])
+
+    useEffect(() => {
+        setReportsOpen(isReportsActive)
     }, [url])
 
     const handleLogout = () => {
@@ -72,7 +79,8 @@ const Sidebar = () => {
 
             {/* navigation */}
             <nav className="flex-1 px-3 space-y-2 overflow-y-auto mt-2">
-                {navItems.slice(0, 3).map(item => {
+                {/* Regular nav items */}
+                {navItems.map(item => {
                     const active = isActive(item.path)
                     return (
                         <Link
@@ -100,7 +108,7 @@ const Sidebar = () => {
                     )
                 })}
 
-                {/* employees */}
+                {/* Employees Dropdown */}
                 <div>
                     <button
                         onClick={() => setEmployeesOpen(!employeesOpen)}
@@ -162,33 +170,68 @@ const Sidebar = () => {
                     </div>
                 </div>
 
-                {navItems.slice(3).map(item => {
-                    const active = isActive(item.path)
-                    return (
-                        <Link
-                            key={item.name}
-                            href={item.path}
-                            className={`flex items-center
-                                ${isCollapsed ? 'justify-center gap-0' : 'gap-3'}
-                                px-3 py-2.5 rounded-lg
-                                transition-all duration-200 ease-out
-                                hover:translate-x-0.5 active:scale-[0.98]
-                                ${active
-                                    ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
-                                    : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
-                                }
-                            `}
-                        >
-                            <item.icon className="w-5 h-5 shrink-0" />
-                            <span
-                                className={`font-medium transition-all duration-200
-                                ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
+                {/* Reports Dropdown */}
+                <div>
+                    <button
+                        onClick={() => setReportsOpen(!reportsOpen)}
+                        className={`flex items-center
+                            w-full
+                            ${isCollapsed ? 'justify-center gap-0' : 'justify-between gap-3'}
+                            px-3 py-2.5 rounded-lg
+                            transition-all duration-200 ease-out
+                            hover:translate-x-0.5 active:scale-[0.98]
+                            ${isReportsActive
+                                ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
+                                : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
+                            }
+                        `}
+                    >
+                        {isCollapsed ? (
+                            <FileText className="w-5 h-5 shrink-0" />
+                        ) : (
+                            <div className="flex items-center gap-3">
+                                <FileText className="w-5 h-5 shrink-0" />
+                                <span className="font-medium transition-all duration-200">Reports</span>
+                            </div>
+                        )}
+                        {!isCollapsed && (
+                            <ChevronRight
+                                size={16}
+                                className={`transition-transform duration-300 ${reportsOpen ? 'rotate-90' : ''}`}
+                            />
+                        )}
+                    </button>
+
+                    <div
+                        className={`ml-9 mt-1 space-y-1 overflow-hidden
+                        transition-all duration-300 ease-in-out
+                        ${reportsOpen && !isCollapsed
+                                ? 'max-h-48 opacity-100'
+                                : 'max-h-0 opacity-0'
+                            }`}
+                    >
+                        {[
+                            { name: 'Sales', path: '/admin/reports/sales' },
+                            { name: 'Inventory', path: '/admin/reports/inventory' },
+                            { name: 'Events', path: '/admin/reports/events' },
+                            { name: 'Payroll', path: '/admin/reports/payroll' },
+                        ].map(sub => (
+                            <Link
+                                key={sub.name}
+                                href={sub.path}
+                                className={`block px-3 py-2 rounded-md text-sm
+                                    transition-all duration-200
+                                    ${url.startsWith(sub.path)
+                                        ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10'
+                                        : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
+                                    }
+                                `}
                             >
-                                {item.name}
-                            </span>
-                        </Link>
-                    )
-                })}
+                                {sub.name}
+                            </Link>
+                        ))}
+                    </div>
+                </div>
             </nav>
 
             {/* bottom */}

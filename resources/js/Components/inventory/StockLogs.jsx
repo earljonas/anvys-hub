@@ -28,6 +28,7 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
                                 <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
                                 <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Action</th>
                                 <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Quantity</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Adjusted By</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[hsl(var(--border))]">
@@ -51,11 +52,12 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
                                         <td className="p-4 text-sm font-bold text-[hsl(var(--foreground))]">
                                             {log.type === 'IN' ? '+' : '-'}{log.quantity}
                                         </td>
+                                        <td className="p-4 text-sm text-[hsl(var(--muted-foreground))]">{log.adjustedBy}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="p-8 text-center text-[hsl(var(--muted-foreground))]">
+                                    <td colSpan="6" className="p-8 text-center text-[hsl(var(--muted-foreground))]">
                                         No logs available.
                                     </td>
                                 </tr>

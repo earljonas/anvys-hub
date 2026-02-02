@@ -46,6 +46,6 @@ class Product extends Model
      */
     public function addons()
     {
-        return $this->hasMany(ProductAddon::class);
+        return $this->belongsToMany(Addon::class, 'addon_product');
     }
 }

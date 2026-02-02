@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { router } from '@inertiajs/react';
 import { Plus, History } from 'lucide-react';
 import Button from '../../Components/common/Button';
 import InventoryStats from '../../Components/inventory/InventoryStats';
@@ -11,38 +12,18 @@ import AdjustStockModal from '../../Components/inventory/AdjustStockModal';
 import EditItemModal from '../../Components/inventory/EditItemModal';
 import AdminLayout from '../../Layouts/AdminLayout';
 
-// Dummy Data
-const INITIAL_ITEMS = [
-    { id: 1, name: 'Fresh Milk', category: 'Dairy', location: 'Main Branch', stock: 50, minStock: 20, unit: 'liters', costPerUnit: 45, status: 'In Stock' },
-    { id: 2, name: 'Ice Cubes', category: 'Other', location: 'Main Branch', stock: 100, minStock: 50, unit: 'kg', costPerUnit: 15, status: 'In Stock' },
-    { id: 3, name: 'Strawberry Syrup', category: 'Syrups', location: 'Main Branch', stock: 8, minStock: 10, unit: 'bottles', costPerUnit: 120, status: 'Low Stock' },
-    { id: 4, name: 'Chocolate Syrup', category: 'Syrups', location: 'Main Branch', stock: 15, minStock: 10, unit: 'bottles', costPerUnit: 110, status: 'In Stock' },
-    { id: 5, name: 'Plastic Cups (S)', category: 'Cups', location: 'Main Branch', stock: 200, minStock: 100, unit: 'pcs', costPerUnit: 3, status: 'In Stock' },
-    { id: 6, name: 'Plastic Cups (L)', category: 'Cups', location: 'Main Branch', stock: 50, minStock: 100, unit: 'pcs', costPerUnit: 5, status: 'Low Stock' },
-    { id: 7, name: 'Marshmallows', category: 'Toppings', location: 'Main Branch', stock: 0, minStock: 20, unit: 'packs', costPerUnit: 35, status: 'Out of Stock' },
-    { id: 8, name: 'Sprinkles', category: 'Toppings', location: 'Main Branch', stock: 25, minStock: 15, unit: 'packs', costPerUnit: 25, status: 'In Stock' },
-    { id: 9, name: 'Graham Crackers', category: 'Toppings', location: 'Main Branch', stock: 12, minStock: 10, unit: 'packs', costPerUnit: 40, status: 'In Stock' },
-    { id: 10, name: 'Oreo Cookies', category: 'Toppings', location: 'Main Branch', stock: 5, minStock: 15, unit: 'packs', costPerUnit: 65, status: 'Low Stock' },
-    { id: 11, name: 'Vanilla Extract', category: 'Syrups', location: 'Downtown Kiosk', stock: 2, minStock: 5, unit: 'bottles', costPerUnit: 150, status: 'Low Stock' },
-    { id: 12, name: 'Napkins', category: 'Other', location: 'Downtown Kiosk', stock: 500, minStock: 200, unit: 'pcs', costPerUnit: 1, status: 'In Stock' },
-    { id: 13, name: 'Coffee Beans', category: 'Coffee', location: 'Main Branch', stock: 40, minStock: 20, unit: 'kg', costPerUnit: 350, status: 'In Stock' },
-    { id: 14, name: 'Sugar', category: 'Other', location: 'Main Branch', stock: 10, minStock: 15, unit: 'kg', costPerUnit: 55, status: 'Low Stock' },
-    { id: 15, name: 'Paper Straws', category: 'Other', location: 'Downtown Kiosk', stock: 0, minStock: 100, unit: 'pcs', costPerUnit: 2, status: 'Out of Stock' },
-];
+const AdminInventory = ({ items: initialItems = [], locations = [], logs: initialLogs = [] }) => {
+    const [items, setItems] = useState(initialItems);
+    const [logs, setLogs] = useState(initialLogs);
 
-const INITIAL_LOGS = [
-    { id: 1, date: '2023-10-26', time: '10:30 AM', item: 'Fresh Milk', location: 'Main Branch', type: 'IN', quantity: 20 },
-    { id: 2, date: '2023-10-26', time: '11:15 AM', item: 'Ice Cubes', location: 'Main Branch', type: 'OUT', quantity: 50 },
-    { id: 3, date: '2023-10-25', time: '09:00 AM', item: 'Strawberry Syrup', location: 'Main Branch', type: 'IN', quantity: 10 },
-    { id: 4, date: '2023-10-25', time: '02:45 PM', item: 'Plastic Cups (S)', location: 'Main Branch', type: 'OUT', quantity: 100 },
-    { id: 5, date: '2023-10-24', time: '08:20 AM', item: 'Marshmallows', location: 'Main Branch', type: 'OUT', quantity: 5 },
-];
+    // Update local state when props change (after server updates)
+    useEffect(() => {
+        setItems(initialItems);
+    }, [initialItems]);
 
-const LOCATIONS = ['Main Branch', 'Downtown Kiosk', 'Mall Pop-up'];
-
-const AdminInventory = () => {
-    const [items, setItems] = useState(INITIAL_ITEMS);
-    const [logs, setLogs] = useState(INITIAL_LOGS);
+    useEffect(() => {
+        setLogs(initialLogs);
+    }, [initialLogs]);
 
     // Filters
     const [searchQuery, setSearchQuery] = useState('');
@@ -61,7 +42,11 @@ const AdminInventory = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
+    // Get location names for filters
+    const locationNames = locations.map(loc => loc.name);
+
     // Derived State
+    // When "All Locations" filter is selected, show all items from all branches
     const filteredItems = items.filter(item => {
         const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesStatus = statusFilter === 'All Status' || item.status === statusFilter;
@@ -88,32 +73,21 @@ const AdminInventory = () => {
         currentPage * itemsPerPage
     );
 
-    // Helper to calculate status
-    const calculateStatus = (stock, minStock) => {
-        if (stock === 0) return 'Out of Stock';
-        if (stock <= minStock) return 'Low Stock';
-        return 'In Stock';
-    };
-
     // Handlers
-    const handleAddItem = (newItem) => {
-        setItems([newItem, ...items]);
-        // Also add a log
-        const newLog = {
-            id: Date.now(),
-            date: new Date().toISOString().split('T')[0],
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            item: newItem.name,
-            location: newItem.location,
-            type: 'IN',
-            quantity: newItem.stock
-        };
-        setLogs([newLog, ...logs]);
+    const handleAddItem = (formData) => {
+        router.post('/admin/inventory', formData, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAddModalOpen(false);
+            },
+        });
     };
 
     const handleDeleteItem = (id) => {
-        if (window.confirm('Are you sure you want to delete this item?')) {
-            setItems(items.filter(item => item.id !== id));
+        if (window.confirm('Are you sure you want to archive this item?')) {
+            router.delete(`/admin/inventory/${id}`, {
+                preserveScroll: true,
+            });
         }
     };
 
@@ -123,7 +97,18 @@ const AdminInventory = () => {
     };
 
     const handleSaveEdit = (updatedItem) => {
-        setItems(items.map(item => item.id === updatedItem.id ? updatedItem : item));
+        router.put(`/admin/inventory/${updatedItem.id}`, {
+            name: updatedItem.name,
+            locationId: updatedItem.locationId,
+            minStock: updatedItem.minStock,
+            unit: updatedItem.unit,
+            costPerUnit: updatedItem.costPerUnit,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsEditModalOpen(false);
+            },
+        });
     };
 
     const handleViewItem = (item) => {
@@ -137,34 +122,15 @@ const AdminInventory = () => {
     };
 
     const handleAdjustStock = (itemId, type, quantity) => {
-        setItems(items.map(item => {
-            if (item.id === itemId) {
-                const newStock = type === 'in'
-                    ? item.stock + quantity
-                    : Math.max(0, item.stock - quantity);
-                return {
-                    ...item,
-                    stock: newStock,
-                    status: calculateStatus(newStock, item.minStock)
-                };
-            }
-            return item;
-        }));
-
-        // Add log
-        const item = items.find(i => i.id === itemId);
-        if (item) {
-            const newLog = {
-                id: Date.now(),
-                date: new Date().toISOString().split('T')[0],
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                item: item.name,
-                location: item.location,
-                type: type === 'in' ? 'IN' : 'OUT',
-                quantity: quantity
-            };
-            setLogs([newLog, ...logs]);
-        }
+        router.post(`/admin/inventory/${itemId}/adjust`, {
+            type: type,
+            quantity: quantity,
+        }, {
+            preserveScroll: true,
+            onSuccess: () => {
+                setIsAdjustStockModalOpen(false);
+            },
+        });
     };
 
     useEffect(() => {
@@ -207,7 +173,7 @@ const AdminInventory = () => {
                     setStatusFilter={setStatusFilter}
                     locationFilter={locationFilter}
                     setLocationFilter={setLocationFilter}
-                    locations={LOCATIONS}
+                    locations={locationNames}
                 />
 
                 <InventoryTable
@@ -226,7 +192,7 @@ const AdminInventory = () => {
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
                 onAdd={handleAddItem}
-                locations={LOCATIONS}
+                locations={locations}
             />
 
             <StockLogs
@@ -255,7 +221,7 @@ const AdminInventory = () => {
                 onClose={() => setIsEditModalOpen(false)}
                 item={selectedItem}
                 onSave={handleSaveEdit}
-                locations={LOCATIONS}
+                locations={locations}
             />
         </div>
     );
@@ -264,4 +230,3 @@ const AdminInventory = () => {
 AdminInventory.layout = page => <AdminLayout>{page}</AdminLayout>;
 
 export default AdminInventory;
-

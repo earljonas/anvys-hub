@@ -6,8 +6,7 @@ import Button from '../common/Button';
 const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
     const [formData, setFormData] = useState({
         name: '',
-        location: '',
-        stock: '',
+        locationId: '',
         minStock: '',
         unit: 'pcs',
         costPerUnit: ''
@@ -17,8 +16,7 @@ const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
         if (item) {
             setFormData({
                 name: item.name || '',
-                location: item.location || '',
-                stock: item.stock?.toString() || '',
+                locationId: item.locationId?.toString() || '',
                 minStock: item.minStock?.toString() || '',
                 unit: item.unit || 'pcs',
                 costPerUnit: item.costPerUnit?.toString() || ''
@@ -28,26 +26,16 @@ const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
 
     if (!isOpen || !item) return null;
 
-    const calculateStatus = (stock, minStock) => {
-        const s = parseInt(stock) || 0;
-        const m = parseInt(minStock) || 0;
-        if (s === 0) return 'Out of Stock';
-        if (s <= m) return 'Low Stock';
-        return 'In Stock';
-    };
-
     const handleSubmit = (e) => {
         e.preventDefault();
-        const updatedItem = {
-            ...item,
-            ...formData,
-            stock: parseInt(formData.stock) || 0,
+        onSave({
+            id: item.id,
+            name: formData.name,
+            locationId: formData.locationId === '' ? null : parseInt(formData.locationId),
             minStock: parseInt(formData.minStock) || 0,
+            unit: formData.unit,
             costPerUnit: parseFloat(formData.costPerUnit) || 0,
-            status: calculateStatus(formData.stock, formData.minStock)
-        };
-        onSave(updatedItem);
-        onClose();
+        });
     };
 
     return (
@@ -71,17 +59,15 @@ const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Current Stock</label>
-                            <Input
-                                type="number"
-                                required
-                                min="0"
-                                value={formData.stock}
-                                onChange={e => setFormData({ ...formData, stock: e.target.value })}
-                            />
+                    {/* Current Stock - Display Only */}
+                    <div className="bg-[hsl(var(--muted))] rounded-lg p-3">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-[hsl(var(--muted-foreground))]">Current Stock</span>
+                            <span className="text-lg font-bold text-[hsl(var(--foreground))]">{item.stock} {item.unit}</span>
                         </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Minimum Stock</label>
                             <Input
@@ -92,9 +78,6 @@ const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
                                 onChange={e => setFormData({ ...formData, minStock: e.target.value })}
                             />
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
                         <div>
                             <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Unit</label>
                             <Input
@@ -105,17 +88,33 @@ const EditItemModal = ({ isOpen, onClose, item, onSave, locations = [] }) => {
                                 onChange={e => setFormData({ ...formData, unit: e.target.value })}
                             />
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Cost per Unit</label>
-                            <Input
-                                type="number"
-                                required
-                                min="0"
-                                step="0.01"
-                                value={formData.costPerUnit}
-                                onChange={e => setFormData({ ...formData, costPerUnit: e.target.value })}
-                            />
-                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Cost per Unit</label>
+                        <Input
+                            type="number"
+                            required
+                            min="0"
+                            step="0.01"
+                            value={formData.costPerUnit}
+                            onChange={e => setFormData({ ...formData, costPerUnit: e.target.value })}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Location</label>
+                        <select
+                            required
+                            className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
+                            value={formData.locationId}
+                            onChange={e => setFormData({ ...formData, locationId: e.target.value })}
+                        >
+                            <option value="">Select Location</option>
+                            {locations.map(loc => (
+                                <option key={loc.id} value={loc.id}>{loc.name}</option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="pt-4 flex justify-end gap-3">
