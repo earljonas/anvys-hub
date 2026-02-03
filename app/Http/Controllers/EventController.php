@@ -11,7 +11,7 @@ class EventController extends Controller
 {
     public function index()
     {
-        $events = Event::with('package')->get()->map(function ($event) {
+        $events = Event::with(['package', 'payments'])->get()->map(function ($event) {
             return [
                 'id' => $event->id,
                 'customerName' => $event->customer_name,
@@ -23,7 +23,17 @@ class EventController extends Controller
                 'eventTime' => $event->event_time,
                 'extraGuests' => $event->extra_guests,
                 'totalPrice' => (float) $event->total_price,
+                'status' => $event->status,
                 'paymentStatus' => $event->payment_status,
+                'totalPaid' => $event->total_paid,
+                'payments' => $event->payments->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'amount' => (float) $payment->amount,
+                        'notes' => $payment->notes,
+                        'createdAt' => $payment->created_at->format('Y-m-d H:i'),
+                    ];
+                }),
             ];
         });
 
@@ -61,7 +71,6 @@ class EventController extends Controller
             'eventTime' => 'required|string',
             'extraGuests' => 'integer|min:0',
             'totalPrice' => 'required|numeric|min:0',
-            'paymentStatus' => 'required|string|in:Pending,Paid,Partial',
         ]);
 
         Event::create([
@@ -73,7 +82,7 @@ class EventController extends Controller
             'event_time' => $validated['eventTime'],
             'extra_guests' => $validated['extraGuests'] ?? 0,
             'total_price' => $validated['totalPrice'],
-            'payment_status' => $validated['paymentStatus'],
+            'status' => 'ACTIVE',
         ]);
 
         return redirect()->back()->with('success', 'Event created successfully.');
@@ -81,14 +90,14 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event)
     {
-        // 1. Prevent editing past events
-        if ($event->event_date->isPast() && !$event->event_date->isToday()) {
-            // Allowing today for last minute changes, but strictly past dates are locked.
+        // Prevent editing cancelled events
+        if ($event->isCancelled()) {
+            return redirect()->back()->withErrors(['message' => 'Cannot edit cancelled events.']);
+        }
 
-            // Check if the event date stored in DB is strictly in the past
-            if ($event->event_date->lt(Carbon::today())) {
-                return redirect()->back()->withErrors(['message' => 'Cannot edit past events.']);
-            }
+        // Prevent editing past events
+        if ($event->event_date->lt(Carbon::today())) {
+            return redirect()->back()->withErrors(['message' => 'Cannot edit past events.']);
         }
 
         $validated = $request->validate([
@@ -100,7 +109,6 @@ class EventController extends Controller
             'eventTime' => 'required|string',
             'extraGuests' => 'integer|min:0',
             'totalPrice' => 'required|numeric|min:0',
-            'paymentStatus' => 'required|string|in:Pending,Paid,Partial',
         ]);
 
         $event->update([
@@ -112,9 +120,20 @@ class EventController extends Controller
             'event_time' => $validated['eventTime'],
             'extra_guests' => $validated['extraGuests'] ?? 0,
             'total_price' => $validated['totalPrice'],
-            'payment_status' => $validated['paymentStatus'],
         ]);
 
         return redirect()->back()->with('success', 'Event updated successfully.');
+    }
+
+    public function cancel(Event $event)
+    {
+        // Prevent cancelling already cancelled events
+        if ($event->isCancelled()) {
+            return redirect()->back()->withErrors(['message' => 'Event is already cancelled.']);
+        }
+
+        $event->update(['status' => 'CANCELLED']);
+
+        return redirect()->back()->with('success', 'Event cancelled successfully.');
     }
 }

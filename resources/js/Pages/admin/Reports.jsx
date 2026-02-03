@@ -2,6 +2,7 @@ import React from 'react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { Download, TrendingUp, ShoppingBag, Clock, ReceiptText } from 'lucide-react';
 import Button from '../../Components/common/Button';
+import StatCard from '../../Components/reports/StatCard';
 
 const Reports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
     // Calculate max value for chart scaling
@@ -48,7 +49,6 @@ const Reports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Reports & Analytics</h1>
-                    <p className="text-[hsl(var(--muted-foreground))]">Insights to grow your business</p>
                 </div>
                 <Button variant="primary" className="flex items-center gap-2 shadow-lg shadow-pink-500/20" onClick={exportToCSV}>
                     <Download size={18} /> Export CSV
@@ -200,43 +200,7 @@ const Reports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
     );
 };
 
-const StatCard = ({ title, value, subtitle, icon: Icon, variant = 'primary' }) => {
-    const variants = {
-        primary: {
-            iconBg: 'bg-[hsl(var(--primary)/0.1)]',
-            iconColor: 'text-[hsl(var(--primary))]'
-        },
-        success: {
-            iconBg: 'bg-[hsl(var(--success)/0.1)]',
-            iconColor: 'text-[hsl(var(--success))]'
-        },
-        warning: {
-            iconBg: 'bg-[hsl(var(--warning)/0.1)]',
-            iconColor: 'text-[hsl(var(--warning))]'
-        },
-        muted: {
-            iconBg: 'bg-[hsl(var(--muted))]',
-            iconColor: 'text-[hsl(var(--muted-foreground))]'
-        }
-    };
 
-    const { iconBg, iconColor } = variants[variant] || variants.primary;
-
-    return (
-        <div className="bg-[hsl(var(--card))] p-6 rounded-xl border border-[hsl(var(--border))] shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="flex justify-between items-start">
-                <div className="flex-1">
-                    <p className="text-sm font-medium text-[hsl(var(--muted-foreground))]">{title}</p>
-                    <h3 className="text-3xl font-bold mt-2 text-[hsl(var(--foreground))]">{value}</h3>
-                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">{subtitle}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${iconBg}`}>
-                    <Icon className={`w-6 h-6 ${iconColor}`} />
-                </div>
-            </div>
-        </div>
-    );
-};
 
 Reports.layout = page => <AdminLayout>{page}</AdminLayout>;
 

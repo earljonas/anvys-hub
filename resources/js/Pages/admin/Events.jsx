@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { router, usePage } from '@inertiajs/react'; // ADDED
+import { router, usePage } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { ChevronLeft, ChevronRight, Plus, Calendar as CalIcon, History, Clock } from 'lucide-react';
 import Button from '../../Components/common/Button';
 import EventModal from '../../Components/events/EventModal';
 import DayDetailsModal from '../../Components/events/DayDetailsModal';
+import AddPaymentModal from '../../Components/events/AddPaymentModal';
 
 const getDaysInMonth = (year, month) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year, month) => new Date(year, month, 1).getDay();
@@ -19,6 +20,7 @@ const Events = () => {
     const [eventModalMode, setEventModalMode] = useState('add');
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [isDayModalOpen, setIsDayModalOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
     const { events: initialEvents = [], packages = [] } = usePage().props;
     const [events, setEvents] = useState(initialEvents);
@@ -77,10 +79,10 @@ const Events = () => {
 
         const eventDate = new Date(event.eventDate);
         eventDate.setHours(0, 0, 0, 0);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
 
-        if (eventDate < today) {
+        if (eventDate < todayDate || event.status === 'CANCELLED') {
             setEventModalMode('view-only');
         } else {
             setEventModalMode('view');
@@ -103,6 +105,32 @@ const Events = () => {
         }
     };
 
+    const handleAddPayment = (event) => {
+        setSelectedEvent(event);
+        setIsEventModalOpen(false);
+        setIsPaymentModalOpen(true);
+    };
+
+    const handleSavePayment = (paymentData) => {
+        router.post(`/admin/events/${paymentData.eventId}/payments`, {
+            amount: paymentData.amount,
+            notes: paymentData.notes
+        }, {
+            onSuccess: () => {
+                setIsPaymentModalOpen(false);
+                setSelectedEvent(null);
+            },
+            preserveScroll: true
+        });
+    };
+
+    const handleCancelEvent = (eventId) => {
+        router.post(`/admin/events/${eventId}/cancel`, {}, {
+            onSuccess: () => setIsEventModalOpen(false),
+            preserveScroll: true
+        });
+    };
+
     const getEventsForDay = (day) => {
         if (!day) return [];
 
@@ -113,6 +141,14 @@ const Events = () => {
 
     const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
     const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+    // Helper to get status badge style
+    const getStatusBadgeClass = (status) => {
+        if (status === 'CANCELLED') {
+            return 'bg-red-100 text-red-700';
+        }
+        return 'bg-green-100 text-green-700';
+    };
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
@@ -162,6 +198,7 @@ const Events = () => {
                             const dayEvents = getEventsForDay(day);
                             const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
                             const isSelected = selectedDate && day === selectedDate.getDate() && month === selectedDate.getMonth() && year === selectedDate.getFullYear();
+                            const hasCancelledEvent = dayEvents.some(e => e.status === 'CANCELLED');
 
                             return (
                                 <div
@@ -174,7 +211,11 @@ const Events = () => {
                                     </span>
                                     <div className="flex gap-1 flex-wrap w-full mt-1">
                                         {dayEvents.slice(0, 3).map((ev, i) => (
-                                            <div key={i} className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--primary))]" title={ev.customerName} />
+                                            <div
+                                                key={i}
+                                                className={`h-1.5 w-1.5 rounded-full ${ev.status === 'CANCELLED' ? 'bg-red-400' : 'bg-[hsl(var(--primary))]'}`}
+                                                title={`${ev.customerName}${ev.status === 'CANCELLED' ? ' (Cancelled)' : ''}`}
+                                            />
                                         ))}
                                         {dayEvents.length > 3 && <span className="text-[10px] text-[hsl(var(--muted-foreground))]">+</span>}
                                     </div>
@@ -204,9 +245,22 @@ const Events = () => {
                                 <div className="text-center text-[hsl(var(--muted-foreground))] py-10">No {rightPanelTab} events found.</div>
                             ) : (
                                 (rightPanelTab === 'upcoming' ? upcomingEvents : historyEvents).map(event => (
-                                    <div key={event.id} onClick={() => handleViewEvent(event)} className="group p-4 rounded-[var(--radius)] bg-[hsl(var(--background))] hover:bg-[hsl(var(--muted))] border border-transparent hover:border-[hsl(var(--border))] transition-all cursor-pointer">
+                                    <div
+                                        key={event.id}
+                                        onClick={() => handleViewEvent(event)}
+                                        className={`group p-4 rounded-[var(--radius)] bg-[hsl(var(--background))] hover:bg-[hsl(var(--muted))] border border-transparent hover:border-[hsl(var(--border))] transition-all cursor-pointer ${event.status === 'CANCELLED' ? 'opacity-60' : ''}`}
+                                    >
                                         <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-[hsl(var(--foreground))] group-hover:text-[hsl(var(--primary))] transition-colors">{event.customerName}</h4>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className={`font-bold group-hover:text-[hsl(var(--primary))] transition-colors ${event.status === 'CANCELLED' ? 'line-through text-[hsl(var(--muted-foreground))]' : 'text-[hsl(var(--foreground))]'}`}>
+                                                    {event.customerName}
+                                                </h4>
+                                                {event.status === 'CANCELLED' && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                                                        CANCELLED
+                                                    </span>
+                                                )}
+                                            </div>
                                             <span className="text-xs px-2 py-0.5 rounded-full bg-[hsl(var(--primary))/10] text-[hsl(var(--primary))] font-medium">
                                                 {new Date(event.eventDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                             </span>
@@ -217,6 +271,14 @@ const Events = () => {
                                         <div className="flex items-center gap-4 text-xs text-[hsl(var(--muted-foreground))] border-t border-[hsl(var(--border))] pt-2 mt-2">
                                             <span className="flex items-center gap-1"><Clock size={12} /> {event.eventTime}</span>
                                             <span className="flex items-center gap-1"><span className="font-semibold text-[hsl(var(--foreground))]">₱{event.totalPrice?.toLocaleString()}</span> Total</span>
+                                            {event.paymentStatus && (
+                                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${event.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' :
+                                                        event.paymentStatus === 'PARTIAL' ? 'bg-yellow-100 text-yellow-700' :
+                                                            'bg-gray-100 text-gray-700'
+                                                    }`}>
+                                                    {event.paymentStatus}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 ))
@@ -243,6 +305,15 @@ const Events = () => {
                 selectedDate={selectedDate}
                 onSave={handleSaveEvent}
                 packages={packages}
+                onAddPayment={handleAddPayment}
+                onCancelEvent={handleCancelEvent}
+            />
+
+            <AddPaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                event={selectedEvent}
+                onSave={handleSavePayment}
             />
         </div>
     );

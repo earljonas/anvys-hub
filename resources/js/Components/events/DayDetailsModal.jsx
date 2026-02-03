@@ -36,17 +36,36 @@ const DayDetailsModal = ({ isOpen, onClose, date, events, onAddEvent, onViewEven
                                 <div
                                     key={event.id}
                                     onClick={() => onViewEvent(event)}
-                                    className="p-3 rounded-lg border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))/5] cursor-pointer transition-all"
+                                    className={`p-3 rounded-lg border border-[hsl(var(--border))] hover:border-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))/5] cursor-pointer transition-all ${event.status === 'CANCELLED' ? 'opacity-60' : ''}`}
                                 >
                                     <div className="flex justify-between items-start">
-                                        <h4 className="font-bold text-[hsl(var(--foreground))]">{event.customerName}</h4>
+                                        <div className="flex items-center gap-2">
+                                            <h4 className={`font-bold ${event.status === 'CANCELLED' ? 'line-through text-[hsl(var(--muted-foreground))]' : 'text-[hsl(var(--foreground))]'}`}>
+                                                {event.customerName}
+                                            </h4>
+                                            {event.status === 'CANCELLED' && (
+                                                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                                                    CANCELLED
+                                                </span>
+                                            )}
+                                        </div>
                                         <span className="text-xs font-mono bg-[hsl(var(--muted))] px-1.5 py-0.5 rounded text-[hsl(var(--muted-foreground))]">
                                             {event.eventTime}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">
-                                        {event.packageName || 'Event'}
-                                    </p>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                                            {event.packageName || 'Event'}
+                                        </p>
+                                        {event.paymentStatus && (
+                                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${event.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' :
+                                                event.paymentStatus === 'PARTIAL' ? 'bg-yellow-100 text-yellow-700' :
+                                                    'bg-gray-100 text-gray-700'
+                                                }`}>
+                                                {event.paymentStatus}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             ))}
                         </div>

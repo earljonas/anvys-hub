@@ -18,11 +18,11 @@ const AddItemModal = ({ isOpen, onClose, onAdd, locations = [] }) => {
     const handleSubmit = (e) => {
         e.preventDefault();
         onAdd({
-            name: formData.name,
+            name: formData.name.trim(),
             locationId: formData.locationId === '' || formData.locationId === 'all' ? null : parseInt(formData.locationId),
             stock: parseInt(formData.stock) || 0,
             minStock: parseInt(formData.minStock) || 0,
-            unit: formData.unit,
+            unit: formData.unit.trim().toLowerCase(),
             costPerUnit: parseFloat(formData.costPerUnit) || 0,
         });
         setFormData({ name: '', locationId: '', stock: '', minStock: '', unit: 'pcs', costPerUnit: '' });

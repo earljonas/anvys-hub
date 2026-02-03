@@ -38,6 +38,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/events', [App\Http\Controllers\EventController::class, 'index'])->name('admin.events');
     Route::post('/events', [App\Http\Controllers\EventController::class, 'store'])->name('admin.events.store');
     Route::put('/events/{event}', [App\Http\Controllers\EventController::class, 'update'])->name('admin.events.update');
+    Route::post('/events/{event}/cancel', [App\Http\Controllers\EventController::class, 'cancel'])->name('admin.events.cancel');
+    Route::post('/events/{event}/payments', [App\Http\Controllers\EventPaymentController::class, 'store'])->name('admin.events.payments.store');
 
     // Locations CRUD
     Route::get('/locations', [LocationController::class, 'index'])->name('admin.locations');
@@ -63,8 +65,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
 
     // Reports
     Route::get('/reports/sales', [ReportsController::class, 'index'])->name('admin.reports.sales');
-    Route::get('/reports/inventory', fn() => Inertia::render('admin/reports/InventoryReports'))->name('admin.reports.inventory');
-    Route::get('/reports/events', fn() => Inertia::render('admin/reports/EventsReports'))->name('admin.reports.events');
+    Route::get('/reports/inventory', [ReportsController::class, 'inventory'])->name('admin.reports.inventory');
+    Route::get('/reports/events', [ReportsController::class, 'events'])->name('admin.reports.events');
     Route::get('/reports/payroll', fn() => Inertia::render('admin/reports/PayrollReports'))->name('admin.reports.payroll');
 });
 
