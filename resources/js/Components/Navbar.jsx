@@ -10,8 +10,9 @@ import {
 } from 'lucide-react';
 
 const Navbar = () => {
-    // Get the current URL to determine which tab is active
-    const { url } = usePage();
+    // Get the current URL and employee data from shared props
+    const { url, props } = usePage();
+    const { employee } = props;
 
     // Helper to determine styles for active vs inactive links
     const getLinkClasses = (path) => {
@@ -85,10 +86,12 @@ const Navbar = () => {
                 {/* Divider */}
                 <div className="h-8 w-px bg-[hsl(var(--border))]" />
 
-                {/* Location */}
+                {/* Location - Dynamic based on employee */}
                 <div className="flex items-center gap-2 text-[hsl(var(--muted-foreground))]">
                     <MapPin size={18} />
-                    <span className="text-sm font-medium">SM Mall Branch</span>
+                    <span className="text-sm font-medium">
+                        {employee?.locationName || 'No Location Assigned'}
+                    </span>
                 </div>
 
                 {/* Theme Toggle */}

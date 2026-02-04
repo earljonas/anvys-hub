@@ -1,12 +1,38 @@
 import React from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import { Calendar, Users, MapPin, TrendingUp, Clock } from 'lucide-react';
+import { Calendar, Users, MapPin, TrendingUp, Clock, Download } from 'lucide-react';
 import StatCard from '../../../Components/reports/StatCard';
+import Button from '../../../Components/common/Button';
 
 const EventsReports = ({ stats, upcomingEvents, monthlyEvents }) => {
 
     // Calculate max events for chart scaling
     const maxEvents = Math.max(...monthlyEvents.map(m => m.events), 1);
+
+    const exportEventsToCSV = () => {
+        const headers = ['Customer Name', 'Package', 'Date', 'Time', 'Attendees', 'Payment Status'];
+        const rows = upcomingEvents.map(event => [
+            `"${event.name}"`,
+            event.package,
+            event.date,
+            event.time,
+            event.attendees,
+            event.status,
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `events-report-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
@@ -15,6 +41,13 @@ const EventsReports = ({ stats, upcomingEvents, monthlyEvents }) => {
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Events Reports</h1>
                 </div>
+                <Button
+                    variant="primary"
+                    className="flex items-center gap-2 shadow-lg shadow-pink-500/20"
+                    onClick={exportEventsToCSV}
+                >
+                    <Download size={18} /> Export CSV
+                </Button>
             </div>
 
             {/* Stats Cards */}

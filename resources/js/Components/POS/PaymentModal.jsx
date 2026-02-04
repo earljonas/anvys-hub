@@ -180,11 +180,22 @@ const PaymentModal = ({
                                     <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">₱</span>
                                     <input
                                         type="number"
+                                        min="0"
                                         value={amountReceived}
-                                        onChange={(e) => setAmountReceived(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === '-') e.preventDefault();
+                                        }}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+
+                                            if (value === '' || Number(value) >= 0) {
+                                                setAmountReceived(value);
+                                            }
+                                        }}
                                         placeholder="0.00"
                                         className="w-full pl-8 pr-4 py-3 text-2xl font-bold rounded-xl border-2 border-slate-200 focus:border-[hsl(var(--primary))] focus:ring-2 focus:ring-[hsl(var(--primary)/0.2)] outline-none transition-all text-center"
                                     />
+
                                 </div>
                             </div>
 

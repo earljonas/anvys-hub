@@ -2,7 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Employee;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -35,9 +37,23 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $employee = null;
+
+        if (Auth::check()) {
+            $emp = Employee::where('user_id', Auth::id())->with('location')->first();
+            if ($emp) {
+                $employee = [
+                    'id' => $emp->id,
+                    'name' => $emp->name,
+                    'locationId' => $emp->location_id,
+                    'locationName' => $emp->location?->name,
+                ];
+            }
+        }
+
         return [
             ...parent::share($request),
-            //
+            'employee' => $employee,
         ];
     }
 }

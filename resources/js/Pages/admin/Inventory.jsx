@@ -121,10 +121,11 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
         setIsAdjustStockModalOpen(true);
     };
 
-    const handleAdjustStock = (itemId, type, quantity) => {
+    const handleAdjustStock = (itemId, type, quantity, notes) => {
         router.post(`/admin/inventory/${itemId}/adjust`, {
             type: type,
             quantity: quantity,
+            notes: notes,
         }, {
             preserveScroll: true,
             onSuccess: () => {

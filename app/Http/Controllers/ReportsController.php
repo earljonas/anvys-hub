@@ -151,19 +151,26 @@ class ReportsController extends Controller
         $outOfStockCount = InventoryItem::where('status', 'Out of Stock')->count();
         $totalValue = InventoryItem::sum(DB::raw('stock * cost_per_unit'));
 
-        $stockLogs = StockLog::with(['inventoryItem', 'user', 'location'])
+        $stockLogs = StockLog::with(['inventoryItem', 'user.employee', 'location'])
             ->latest('logged_at')
             ->limit(10)
             ->get()
             ->map(function ($log) {
+                // Use employee name if available, otherwise fall back to user name
+                $userName = 'System';
+                if ($log->user) {
+                    $userName = $log->user->employee?->name ?? $log->user->name;
+                }
                 return [
                     'id' => $log->id,
                     'item' => $log->inventoryItem->name ?? 'Unknown',
                     'location' => $log->location->name ?? 'Unknown',
                     'type' => $log->type,
                     'quantity' => $log->quantity,
-                    'user' => $log->user->name ?? 'System',
-                    'date' => $log->logged_at->format('M d, Y h:i A'),
+                    'notes' => $log->notes,
+                    'user' => $userName,
+                    'date' => $log->logged_at->format('M d, Y'),
+                    'time' => $log->logged_at->format('h:i A'),
                 ];
             });
 

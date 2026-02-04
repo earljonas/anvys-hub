@@ -1,7 +1,8 @@
 import React from 'react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import { Package, TrendingDown, AlertTriangle, DollarSign, History } from 'lucide-react';
+import { Package, TrendingDown, AlertTriangle, DollarSign, History, Download } from 'lucide-react';
 import StatCard from '../../../Components/reports/StatCard';
+import Button from '../../../Components/common/Button';
 
 const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
 
@@ -13,6 +14,33 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
         }).format(value);
     };
 
+    const exportStockLogsToCSV = () => {
+        const headers = ['Date', 'Time', 'Item', 'Location', 'Action', 'Quantity', 'Notes', 'Adjusted By'];
+        const rows = stockLogs.map(log => [
+            log.date,
+            log.time || '',
+            log.item,
+            log.location,
+            log.type,
+            log.quantity,
+            log.notes ? `"${log.notes.replace(/"/g, '""')}"` : '',
+            log.user || log.adjustedBy || '',
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `stock-logs-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    };
+
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             {/* Header */}
@@ -20,6 +48,13 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Inventory Reports</h1>
                 </div>
+                <Button
+                    variant="primary"
+                    className="flex items-center gap-2 shadow-lg shadow-pink-500/20"
+                    onClick={exportStockLogsToCSV}
+                >
+                    <Download size={18} /> Export CSV
+                </Button>
             </div>
 
             {/* Stats Cards */}

@@ -15,6 +15,7 @@ class StockLog extends Model
         'user_id',
         'type',
         'quantity',
+        'notes',
         'logged_at',
     ];
 

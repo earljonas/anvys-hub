@@ -28,7 +28,7 @@ Route::post('/logout', [LoginController::class, 'logout'])
 
 // Admin Routes
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
-    Route::get('/dashboard', fn() => Inertia::render('admin/Dashboard'))->name('admin.dashboard');
+    Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->name('admin.dashboard');
     Route::get('/employees', fn() => Inertia::render('admin/Employees'));
     Route::get('/settings', fn() => Inertia::render('admin/Settings'));
     Route::get('/attendance', fn() => Inertia::render('admin/Attendance'));

@@ -32,11 +32,16 @@ class InventoryController extends Controller
 
         $locations = Location::where('status', 'Active')->get(['id', 'name']);
 
-        $logs = StockLog::with(['inventoryItem', 'location', 'user'])
+        $logs = StockLog::with(['inventoryItem', 'location', 'user.employee'])
             ->orderBy('logged_at', 'desc')
             ->limit(100)
             ->get()
             ->map(function ($log) {
+                // Use employee name if available, otherwise fall back to user name
+                $adjustedBy = 'System';
+                if ($log->user) {
+                    $adjustedBy = $log->user->employee?->name ?? $log->user->name;
+                }
                 return [
                     'id' => $log->id,
                     'date' => $log->logged_at->format('Y-m-d'),
@@ -45,7 +50,8 @@ class InventoryController extends Controller
                     'location' => $log->location?->name ?? 'Unknown',
                     'type' => $log->type,
                     'quantity' => $log->quantity,
-                    'adjustedBy' => $log->user?->name ?? 'System',
+                    'notes' => $log->notes,
+                    'adjustedBy' => $adjustedBy,
                 ];
             });
 
@@ -143,6 +149,7 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:in,out',
             'quantity' => 'required|integer|min:1',
+            'notes' => 'nullable|string|max:500',
         ]);
 
         $type = $validated['type'];
@@ -163,6 +170,7 @@ class InventoryController extends Controller
             'user_id' => Auth::id(),
             'type' => strtoupper($type),
             'quantity' => $quantity,
+            'notes' => $validated['notes'] ?? null,
             'logged_at' => now(),
         ]);
 

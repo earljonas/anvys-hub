@@ -236,27 +236,6 @@ const Sidebar = () => {
 
             {/* bottom */}
             <div className="p-3 border-t border-[hsl(var(--sidebar-border))] space-y-2">
-                <Link
-                    href="/admin/settings"
-                    className={`flex items-center
-                        ${isCollapsed ? 'justify-center gap-0' : 'gap-3'}
-                        px-3 py-2.5 rounded-lg
-                        transition-all duration-200 ease-out
-                        hover:translate-x-0.5 active:scale-[0.98]
-                        ${isActive('/admin/settings')
-                            ? 'bg-[hsl(var(--sidebar-accent))]'
-                            : 'hover:bg-[hsl(var(--sidebar-accent))]'
-                        }
-                    `}
-                >
-                    <Settings className="w-5 h-5 shrink-0" />
-                    <span className={`font-medium transition-all duration-200
-                        ${isCollapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}
-                    >
-                        Settings
-                    </span>
-                </Link>
-
                 <button
                     onClick={handleLogout}
                     className={`flex items-center cursor-pointer

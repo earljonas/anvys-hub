@@ -1,12 +1,14 @@
-import React from 'react';
-import { X, History } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, History, FileText } from 'lucide-react';
 
 const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
+    const [expandedNote, setExpandedNote] = useState(null);
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl mx-4 overflow-hidden border border-[hsl(var(--border))] flex flex-col max-h-[80vh]">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl mx-4 overflow-hidden border border-[hsl(var(--border))] flex flex-col max-h-[80vh]">
                 <div className="flex justify-between items-center p-6 border-b border-[hsl(var(--border))]">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-[hsl(var(--primary))/10] rounded-lg">
@@ -27,8 +29,9 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
                                 <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Item</th>
                                 <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
                                 <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Action</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Quantity</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Adjusted By</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Qty</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Notes</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">By</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[hsl(var(--border))]">
@@ -46,18 +49,40 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
                                                 ? 'bg-emerald-100 text-emerald-700'
                                                 : 'bg-red-100 text-red-700'
                                                 }`}>
-                                                Stock {log.type}
+                                                {log.type === 'IN' ? '+ IN' : '- OUT'}
                                             </span>
                                         </td>
                                         <td className="p-4 text-sm font-bold text-[hsl(var(--foreground))]">
-                                            {log.type === 'IN' ? '+' : '-'}{log.quantity}
+                                            {log.quantity}
+                                        </td>
+                                        <td className="p-4 text-sm text-[hsl(var(--muted-foreground))] max-w-[200px]">
+                                            {log.notes ? (
+                                                <div className="relative">
+                                                    <button
+                                                        onClick={() => setExpandedNote(expandedNote === log.id ? null : log.id)}
+                                                        className="flex items-center gap-1 text-[hsl(var(--primary))] hover:underline text-left"
+                                                    >
+                                                        <FileText size={14} />
+                                                        <span className="truncate max-w-[150px]">
+                                                            {log.notes.length > 30 ? log.notes.substring(0, 30) + '...' : log.notes}
+                                                        </span>
+                                                    </button>
+                                                    {expandedNote === log.id && (
+                                                        <div className="absolute z-10 top-full left-0 mt-1 p-3 bg-white rounded-lg shadow-lg border border-[hsl(var(--border))] max-w-xs">
+                                                            <p className="text-sm text-[hsl(var(--foreground))]">{log.notes}</p>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                <span className="text-[hsl(var(--muted-foreground))]/50 italic">—</span>
+                                            )}
                                         </td>
                                         <td className="p-4 text-sm text-[hsl(var(--muted-foreground))]">{log.adjustedBy}</td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="p-8 text-center text-[hsl(var(--muted-foreground))]">
+                                    <td colSpan="7" className="p-8 text-center text-[hsl(var(--muted-foreground))]">
                                         No logs available.
                                     </td>
                                 </tr>
@@ -71,7 +96,7 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
                         onClick={onClose}
                         className="px-4 py-2 text-sm font-medium text-[hsl(var(--primary))] hover:bg-[hsl(var(--primary))/10] rounded-lg transition-colors"
                     >
-                        Close Logs
+                        Close
                     </button>
                 </div>
             </div>
@@ -80,3 +105,4 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
 };
 
 export default StockLogsModal;
+

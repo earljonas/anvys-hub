@@ -10,7 +10,16 @@ import {
 import banner from '../../../assets/banner.jpg';
 import AdminLayout from '../../Layouts/AdminLayout';
 
-const Dashboard = () => {
+const Dashboard = ({ stats = {}, lowStockItems = [], upcomingEvents = [] }) => {
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('en-PH', {
+            style: 'currency',
+            currency: 'PHP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0,
+        }).format(value || 0);
+    };
+
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             {/* Banner Section */}
@@ -35,29 +44,29 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
                     title="Today's Sales"
-                    value="₱15,420"
-                    subtitle="+12% from yesterday"
+                    value={formatCurrency(stats.todaysSales)}
+                    subtitle={`${stats.salesChange >= 0 ? '+' : ''}${stats.salesChange || 0}% from yesterday`}
                     icon={TrendingUp}
-                    variant="success"
+                    variant={stats.salesChange >= 0 ? 'success' : 'warning'}
                 />
                 <StatCard
                     title="Low Stock Items"
-                    value="10"
+                    value={stats.lowStockCount || 0}
                     subtitle="Need attention"
                     icon={Package}
-                    variant="warning"
+                    variant={stats.lowStockCount > 0 ? 'warning' : 'success'}
                 />
                 <StatCard
                     title="Upcoming Events"
-                    value="3"
-                    subtitle="This month"
+                    value={stats.upcomingEventsCount || 0}
+                    subtitle="Next 30 days"
                     icon={Calendar}
                     variant="primary"
                 />
                 <StatCard
                     title="Pending Payroll"
-                    value="₱47,300"
-                    subtitle="8 employees"
+                    value={formatCurrency(stats.pendingPayroll)}
+                    subtitle={`${stats.activeEmployeesCount || 0} employees`}
                     icon={Users}
                     variant="muted"
                 />
@@ -74,9 +83,21 @@ const Dashboard = () => {
                         <h2 className="text-lg font-bold text-[hsl(var(--foreground))]">Low Stock Alerts</h2>
                     </div>
                     <div className="space-y-3">
-                        <StockAlertItem name="Milk" remaining="5 liters" min="20" />
-                        <StockAlertItem name="Marshmallows" remaining="10 packs" min="50" />
-                        <StockAlertItem name="Large cups" remaining="25 pieces" min="100" />
+                        {lowStockItems.length > 0 ? (
+                            lowStockItems.map(item => (
+                                <StockAlertItem
+                                    key={item.id}
+                                    name={item.name}
+                                    remaining={item.remaining}
+                                    min={item.min}
+                                    status={item.status}
+                                />
+                            ))
+                        ) : (
+                            <p className="text-center text-[hsl(var(--muted-foreground))] py-4">
+                                All items are well stocked! ✓
+                            </p>
+                        )}
                     </div>
                 </div>
 
@@ -89,18 +110,21 @@ const Dashboard = () => {
                         <h2 className="text-lg font-bold text-[hsl(var(--foreground))]">Upcoming Events</h2>
                     </div>
                     <div className="space-y-3">
-                        <EventItem
-                            name="Kent Serencio"
-                            date="October 1, 2025 at 2:00 PM"
-                            details="75 pax (₱5,250)"
-                            status="paid"
-                        />
-                        <EventItem
-                            name="Odyssey Ragas"
-                            date="October 22, 2025 at 11:00 AM"
-                            details="100 pax (₱6,800)"
-                            status="pending"
-                        />
+                        {upcomingEvents.length > 0 ? (
+                            upcomingEvents.map(event => (
+                                <EventItem
+                                    key={event.id}
+                                    name={event.name}
+                                    date={event.date}
+                                    details={event.details}
+                                    status={event.status}
+                                />
+                            ))
+                        ) : (
+                            <p className="text-center text-[hsl(var(--muted-foreground))] py-4">
+                                No upcoming events scheduled.
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -148,17 +172,22 @@ const StatCard = ({ title, value, subtitle, icon: Icon, variant = 'primary' }) =
 };
 
 
-const StockAlertItem = ({ name, remaining, min }) => (
-    <div className="flex items-center justify-between p-4 rounded-lg border border-gray-200 hover:bg-[hsl(var(--sidebar-accent))] transition-colors">
-        <div>
-            <p className="font-semibold text-[hsl(var(--foreground))]">{name}</p>
-            <p className="text-sm text-[hsl(var(--muted-foreground))]">{remaining} remaining</p>
+const StockAlertItem = ({ name, remaining, min, status }) => {
+    const isOutOfStock = status === 'Out of Stock';
+    return (
+        <div className={`flex items-center justify-between p-4 rounded-lg border hover:bg-[hsl(var(--sidebar-accent))] transition-colors ${isOutOfStock ? 'border-red-200' : 'border-gray-200'}`}>
+            <div>
+                <p className="font-semibold text-[hsl(var(--foreground))]">{name}</p>
+                <p className="text-sm text-[hsl(var(--muted-foreground))]">{remaining} remaining</p>
+            </div>
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${isOutOfStock
+                ? 'bg-red-100 text-red-700'
+                : 'bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]'}`}>
+                {isOutOfStock ? 'Out of Stock' : `Min: ${min}`}
+            </span>
         </div>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-[hsl(var(--warning)/0.2)] text-[hsl(var(--warning))]">
-            Min: {min}
-        </span>
-    </div>
-);
+    );
+};
 
 const EventItem = ({ name, date, details, status }) => (
     <div className="flex items-start justify-between p-4 rounded-lg border border-gray-200 hover:bg-[hsl(var(--sidebar-accent))] transition-colors">
