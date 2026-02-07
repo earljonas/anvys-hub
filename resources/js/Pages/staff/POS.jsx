@@ -48,7 +48,7 @@ const POS = ({ categories, products }) => {
         setCart(cart.filter(c => c.uniqueId !== uniqueId));
     };
 
-    // Triggered when clicking the Edit (Pencil) icon in sidebar
+    // Triggered when clicking the Edit icon in sidebar
     const handleEditCartItem = (cartItem) => {
         // Find the original product definition to pass to the modal
         const originalProduct = products.find(p => p.id === cartItem.id) || cartItem;

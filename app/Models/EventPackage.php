@@ -15,13 +15,10 @@ class EventPackage extends Model
         'price',
         'cups_count',
         'extra_guest_price',
-        'description',
-        'features',
     ];
 
     protected $casts = [
         'price' => 'decimal:2',
         'extra_guest_price' => 'decimal:2',
-        'features' => 'array',
     ];
 }

@@ -112,7 +112,7 @@ const Sidebar = () => {
                 <div>
                     <button
                         onClick={() => setEmployeesOpen(!employeesOpen)}
-                        className={`flex items-center
+                        className={`flex items-center cursor-pointer
                             w-full
                             ${isCollapsed ? 'justify-center gap-0' : 'justify-between gap-3'}
                             px-3 py-2.5 rounded-lg
@@ -149,6 +149,7 @@ const Sidebar = () => {
                             }`}
                     >
                         {[
+                            { name: 'All Employees', path: '/admin/employees' },
                             { name: 'Roster', path: '/admin/roster' },
                             { name: 'Attendance', path: '/admin/attendance' },
                             { name: 'Payroll', path: '/admin/payroll' },
@@ -156,7 +157,7 @@ const Sidebar = () => {
                             <Link
                                 key={sub.name}
                                 href={sub.path}
-                                className={`block px-3 py-2 rounded-md text-sm
+                                className={`block px-3 py-2 rounded-md text-sm cursor-pointer
                                     transition-all duration-200
                                     ${url.startsWith(sub.path)
                                         ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10'

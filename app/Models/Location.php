@@ -16,17 +16,13 @@ class Location extends Model
         'status',
     ];
 
-    /**
-     * Get all employees assigned to this location.
-     */
+
     public function employees()
     {
         return $this->hasMany(Employee::class);
     }
 
-    /**
-     * Get the count of active employees at this location.
-     */
+
     public function getStaffCountAttribute()
     {
         return $this->employees()->where('status', 'Active')->count();
