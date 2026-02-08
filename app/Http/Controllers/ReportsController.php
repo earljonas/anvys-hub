@@ -126,7 +126,7 @@ class ReportsController extends Controller
                 ];
             });
 
-        return Inertia::render('admin/Reports', [
+        return Inertia::render('admin/reports/SalesReports', [
             'stats' => [
                 'monthlyRevenue' => round($monthlyRevenue, 2),
                 'revenueChange' => $revenueChange,

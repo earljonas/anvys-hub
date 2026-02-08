@@ -206,7 +206,7 @@ class InventoryController extends Controller
         $user = Auth::user();
 
         // Get staff's assigned location (if they have one via employee record)
-        $employee = \App\Models\Employee::where('email', $user->email)->first();
+        $employee = $user->employee;
         $locationId = $employee?->location_id;
 
         $itemsQuery = InventoryItem::with('location');

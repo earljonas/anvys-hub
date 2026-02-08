@@ -1,10 +1,10 @@
 import React from 'react';
-import AdminLayout from '../../Layouts/AdminLayout';
+import AdminLayout from '@/Layouts/AdminLayout';
 import { Download, TrendingUp, ShoppingBag, Clock, ReceiptText } from 'lucide-react';
-import Button from '../../Components/common/Button';
-import StatCard from '../../Components/reports/StatCard';
+import Button from '@/Components/common/Button';
+import StatCard from '@/Components/reports/StatCard';
 
-const Reports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
+const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
     // Calculate max value for chart scaling
     const maxWeeklyRevenue = Math.max(...weeklyRevenue.map(w => w.value), 1);
     const maxBestSelling = Math.max(...bestSelling.map(b => b.value), 1);
@@ -202,6 +202,6 @@ const Reports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
 
 
 
-Reports.layout = page => <AdminLayout>{page}</AdminLayout>;
+SalesReports.layout = page => <AdminLayout>{page}</AdminLayout>;
 
-export default Reports;
+export default SalesReports;

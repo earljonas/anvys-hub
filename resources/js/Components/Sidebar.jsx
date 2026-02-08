@@ -26,7 +26,7 @@ const Sidebar = () => {
         { name: 'Events', icon: Calendar, path: '/admin/events' },
     ]
 
-    const employeePaths = ['/admin/roster', '/admin/attendance', '/admin/payroll']
+    const employeePaths = ['/admin/employees', '/admin/schedule', '/admin/attendance', '/admin/payroll']
     const reportPaths = ['/admin/reports/sales', '/admin/reports/inventory', '/admin/reports/events', '/admin/reports/payroll']
 
     const isEmployeesActive = employeePaths.some(path => url.startsWith(path))
@@ -68,7 +68,7 @@ const Sidebar = () => {
                 )}
                 <button
                     onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="rounded-lg p-2 transition-all duration-200 hover:bg-[hsl(var(--sidebar-accent))] active:scale-95"
+                    className="rounded-lg p-2 cursor-pointer transition-all duration-200 hover:bg-[hsl(var(--sidebar-accent))] active:scale-95"
                 >
                     <PanelLeft
                         size={20}
@@ -149,8 +149,8 @@ const Sidebar = () => {
                             }`}
                     >
                         {[
-                            { name: 'All Employees', path: '/admin/employees' },
-                            { name: 'Roster', path: '/admin/roster' },
+                            { name: 'Employees', path: '/admin/employees' },
+                            { name: 'Schedule', path: '/admin/schedule' },
                             { name: 'Attendance', path: '/admin/attendance' },
                             { name: 'Payroll', path: '/admin/payroll' },
                         ].map(sub => (
@@ -175,7 +175,7 @@ const Sidebar = () => {
                 <div>
                     <button
                         onClick={() => setReportsOpen(!reportsOpen)}
-                        className={`flex items-center
+                        className={`flex items-center cursor-pointer
                             w-full
                             ${isCollapsed ? 'justify-center gap-0' : 'justify-between gap-3'}
                             px-3 py-2.5 rounded-lg
