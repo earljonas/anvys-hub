@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { router } from '@inertiajs/react';
-import { Plus, History } from 'lucide-react';
+import { Plus, History, Archive } from 'lucide-react';
 import Button from '../../Components/common/Button';
 import InventoryStats from '../../Components/inventory/InventoryStats';
 import InventoryFilters from '../../Components/inventory/InventoryFilters';
@@ -10,9 +10,10 @@ import StockLogs from '../../Components/inventory/StockLogs';
 import ViewItemModal from '../../Components/inventory/ViewItemModal';
 import AdjustStockModal from '../../Components/inventory/AdjustStockModal';
 import EditItemModal from '../../Components/inventory/EditItemModal';
+import ArchivedItemsModal from '../../Components/inventory/ArchivedItemsModal';
 import AdminLayout from '../../Layouts/AdminLayout';
 
-const AdminInventory = ({ items: initialItems = [], locations = [], logs: initialLogs = [] }) => {
+const AdminInventory = ({ items: initialItems = [], locations = [], logs: initialLogs = [], archivedItems = [] }) => {
     const [items, setItems] = useState(initialItems);
     const [logs, setLogs] = useState(initialLogs);
 
@@ -37,6 +38,7 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
     // Modals
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isLogsModalOpen, setIsLogsModalOpen] = useState(false);
+    const [isArchivedModalOpen, setIsArchivedModalOpen] = useState(false);
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -89,6 +91,12 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
                 preserveScroll: true,
             });
         }
+    };
+
+    const handleRestoreItem = (id) => {
+        router.post(`/admin/inventory/${id}/restore`, {}, {
+            preserveScroll: true,
+        });
     };
 
     const handleEditItem = (item) => {
@@ -148,6 +156,14 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
                     <Button
                         className="cursor-pointer"
                         variant="outline"
+                        icon={Archive}
+                        onClick={() => setIsArchivedModalOpen(true)}
+                    >
+                        Archived
+                    </Button>
+                    <Button
+                        className="cursor-pointer"
+                        variant="outline"
                         icon={History}
                         onClick={() => setIsLogsModalOpen(true)}
                     >
@@ -200,6 +216,13 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
                 isOpen={isLogsModalOpen}
                 onClose={() => setIsLogsModalOpen(false)}
                 logs={logs}
+            />
+
+            <ArchivedItemsModal
+                isOpen={isArchivedModalOpen}
+                onClose={() => setIsArchivedModalOpen(false)}
+                items={archivedItems}
+                onRestore={handleRestoreItem}
             />
 
             <ViewItemModal

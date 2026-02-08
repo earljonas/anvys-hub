@@ -12,7 +12,6 @@ class AttendanceRecord extends Model
 
     protected $fillable = [
         'user_id',
-        'user_name',
         'clock_in',
         'clock_out',
         'total_hours',

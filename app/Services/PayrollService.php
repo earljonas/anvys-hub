@@ -100,7 +100,7 @@ class PayrollService
             return null;
 
         $regularPay = $regularHours * $profile->hourly_rate;
-        $overtimeRateMultiplier = 1.25;
+        $overtimeRateMultiplier = config('payroll.overtime_rate_multiplier', 1.25);
         $overtimePay = $overtimeHours * $profile->hourly_rate * $overtimeRateMultiplier;
         $grossPay = $regularPay + $overtimePay;
 
@@ -109,7 +109,7 @@ class PayrollService
         $finalDeductions = [];
         $totalDeductions = 0;
 
-        if ($daysWorked >= 14) {
+        if ($daysWorked >= config('payroll.minimum_days_for_deductions', 14)) {
             foreach ($monthlyDeductions as $key => $amount) {
                 $halfAmount = round($amount / 2, 2);
                 $finalDeductions[$key] = $halfAmount;

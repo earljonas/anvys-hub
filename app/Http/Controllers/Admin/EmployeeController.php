@@ -129,22 +129,25 @@ class EmployeeController extends Controller
             'clock_pin' => $validated['clock_pin'] ?? $user->clock_pin,
         ]);
 
-        // FIXED: Changed 'employeeProfile()' to 'employee()'
-        $user->employee()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'job_title' => $validated['job_title'] ?? null,
-                'department' => $validated['department'] ?? null,
-                'location_id' => $validated['location_id'] ?? null,
-                'employment_type' => $validated['employment_type'] ?? 'full_time',
-                'hourly_rate' => $validated['hourly_rate'] ?? 0,
-                'basic_salary' => $validated['basic_salary'] ?? 0,
-                'tin_number' => $validated['tin_number'] ?? null,
-                'sss_number' => $validated['sss_number'] ?? null,
-                'philhealth_number' => $validated['philhealth_number'] ?? null,
-                'pagibig_number' => $validated['pagibig_number'] ?? null,
-            ]
-        );
+        $employeeData = [
+            'job_title' => $validated['job_title'] ?? null,
+            'department' => $validated['department'] ?? null,
+            'location_id' => $validated['location_id'] ?? null,
+            'employment_type' => $validated['employment_type'] ?? 'full_time',
+            'hourly_rate' => $validated['hourly_rate'] ?? 0,
+            'basic_salary' => $validated['basic_salary'] ?? 0,
+            'tin_number' => $validated['tin_number'] ?? null,
+            'sss_number' => $validated['sss_number'] ?? null,
+            'philhealth_number' => $validated['philhealth_number'] ?? null,
+            'pagibig_number' => $validated['pagibig_number'] ?? null,
+        ];
+
+        if ($user->employee) {
+            $user->employee->update($employeeData);
+        } else {
+            $employeeData['employee_id'] = 'EMP-' . str_pad($user->id, 5, '0', STR_PAD_LEFT);
+            $user->employee()->create($employeeData);
+        }
 
         return back()->with('success', 'Employee details updated successfully.');
     }
@@ -157,5 +160,18 @@ class EmployeeController extends Controller
         }
         $user->delete();
         return back()->with('success', 'Employee archived successfully.');
+    }
+
+    public function restore($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->restore();
+
+        // Restore associated employee record if it exists and was soft deleted
+        if ($user->employee()->onlyTrashed()->exists()) {
+            $user->employee()->restore();
+        }
+
+        return back()->with('success', 'Employee restored successfully.');
     }
 }

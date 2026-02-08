@@ -5,12 +5,20 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\User;
+use App\Services\AttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AttendanceController extends Controller
 {
+    protected $attendanceService;
+
+    public function __construct(AttendanceService $attendanceService)
+    {
+        $this->attendanceService = $attendanceService;
+    }
+
     public function index(Request $request)
     {
         $query = AttendanceRecord::with('user')
@@ -73,28 +81,22 @@ class AttendanceController extends Controller
         $clockIn = Carbon::parse($validated['clock_in']);
         $clockOut = $validated['clock_out'] ? Carbon::parse($validated['clock_out']) : null;
 
-        $totalHours = null;
-        $overtimeHours = 0;
-
-        if ($clockOut) {
-            $minutesWorked = $clockIn->diffInMinutes($clockOut);
-            $elapsedHours = $minutesWorked / 60;
-
-            $deduction = ($elapsedHours >= 6) ? 1.0 : 0.0;
-            $netHours = max(0, $elapsedHours - $deduction);
-
-            $overtimeHours = max(0, $netHours - 8.0);
-            $totalHours = round($netHours, 2);
-            $overtimeHours = round($overtimeHours, 2);
-        }
-
-        $record->update([
+        $updateData = [
             'clock_in' => $clockIn,
             'clock_out' => $clockOut,
-            'total_hours' => $totalHours,
-            'overtime_hours' => $overtimeHours,
             'is_edited' => true,
-        ]);
+        ];
+
+        if ($clockOut) {
+            $hours = $this->attendanceService->calculateHoursWorked($clockIn, $clockOut);
+            $updateData['total_hours'] = $hours['total_hours'];
+            $updateData['overtime_hours'] = $hours['overtime_hours'];
+        } else {
+            $updateData['total_hours'] = null;
+            $updateData['overtime_hours'] = 0;
+        }
+
+        $record->update($updateData);
 
         return back()->with('success', 'Attendance record updated successfully.');
     }

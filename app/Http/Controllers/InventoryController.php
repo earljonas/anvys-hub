@@ -55,8 +55,22 @@ class InventoryController extends Controller
                 ];
             });
 
+        $archivedItems = InventoryItem::onlyTrashed()
+            ->with('location')
+            ->orderBy('deleted_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'location' => $item->location?->name ?? 'All Locations',
+                    'deletedAt' => $item->deleted_at->format('Y-m-d H:i A'),
+                ];
+            });
+
         return Inertia::render('admin/Inventory', [
             'items' => $items,
+            'archivedItems' => $archivedItems,
             'locations' => $locations,
             'logs' => $logs,
         ]);

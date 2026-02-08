@@ -9,8 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes; // Recommended to match User soft 
 
 class Employee extends Model
 {
-    use HasFactory;
-    // use SoftDeletes; // Uncomment if your employees table has a deleted_at column
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'user_id',

@@ -69,11 +69,6 @@ class User extends Authenticatable
         return $this->hasMany(AttendanceRecord::class);
     }
 
-    public function payrolls()
-    {
-        return $this->hasManyThrough(Payroll::class, Payslip::class);
-    }
-
     public function payslips()
     {
         return $this->hasMany(Payslip::class);

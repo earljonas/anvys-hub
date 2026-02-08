@@ -7,11 +7,17 @@ import {
     Package,
     Sun,
     Moon,
-    LogOut
+    LogOut,
+    MapPin,
+    User
 } from 'lucide-react';
 
 const Navbar = () => {
-    const { url } = usePage();
+    const { url, props } = usePage();
+    const auth = props.auth || {};
+    const user = auth.user || null;
+    const employee = user?.employee || null;
+    const location = employee?.location || null;
 
     React.useEffect(() => {
         const storedTheme = localStorage.getItem('theme');
@@ -35,19 +41,41 @@ const Navbar = () => {
     return (
         <nav className="h-20 border-b border-[hsl(var(--border))] bg-white/80 backdrop-blur-sm px-6 flex items-center justify-between sticky top-0 z-50">
 
-            <div className="flex items-center gap-3">
-                <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-                    <img
-                        src="/logo.png"
-                        alt="Anvy's Logo"
-                        className="w-full h-full object-cover"
-                    />
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                        <img
+                            src="/logo.png"
+                            alt="Anvy's Logo"
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                            Anvy's Hub
+                        </h1>
+                    </div>
                 </div>
-                <div className="flex flex-col">
-                    <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                        Anvy's Hub
-                    </h1>
-                </div>
+
+                {/* Employee Info Display */}
+                {user && (
+                    <div className="hidden md:flex items-center gap-3 pl-4 border-l border-[hsl(var(--border))]">
+                        <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/10 flex items-center justify-center text-[hsl(var(--primary))] font-bold">
+                            {user.name?.charAt(0)?.toUpperCase() || <User size={16} />}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                                {user.name || 'Staff Member'}
+                            </span>
+                            {location && (
+                                <span className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1">
+                                    <MapPin size={10} />
+                                    {location.name}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex items-center gap-3">

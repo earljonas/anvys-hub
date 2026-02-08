@@ -52,6 +52,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::post('/employees', [EmployeeController::class, 'store'])->name('admin.employees.store');
     Route::put('/employees/{employee}', [EmployeeController::class, 'update'])->name('admin.employees.update');
     Route::delete('/employees/{employee}', [EmployeeController::class, 'destroy'])->name('admin.employees.archive');
+    Route::post('/employees/{id}/restore', [EmployeeController::class, 'restore'])->name('admin.employees.restore');
 
     Route::get('/schedule', [ScheduleController::class, 'index'])->name('admin.schedule');
     Route::post('/schedule', [ScheduleController::class, 'store'])->name('admin.schedule.store');
@@ -80,7 +81,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/reports/sales', [ReportsController::class, 'index'])->name('admin.reports.sales');
     Route::get('/reports/inventory', [ReportsController::class, 'inventory'])->name('admin.reports.inventory');
     Route::get('/reports/events', [ReportsController::class, 'events'])->name('admin.reports.events');
-    Route::get('/reports/payroll', fn() => Inertia::render('admin/reports/PayrollReports'))->name('admin.reports.payroll');
+    Route::get('/reports/payroll', [ReportsController::class, 'payroll'])->name('admin.reports.payroll');
 });
 
 Route::prefix('staff')->middleware('auth')->group(function () {

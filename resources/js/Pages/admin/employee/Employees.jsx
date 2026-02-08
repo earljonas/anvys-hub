@@ -1,14 +1,96 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, Trash2 } from 'lucide-react';
-import Button from '@/Components/employees/Button';
-import Input from '@/Components/employees/Input';
+import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X } from 'lucide-react';
+import Button from '@/Components/common/Button';
+import Input from '@/Components/common/Input';
 import { Card } from '@/Components/employees/Card';
 import Badge from '@/Components/employees/Badge';
-import Modal from '@/Components/employees/Modal';
 import Pagination from '@/Components/employees/Pagination';
 import Select from '@/Components/employees/Select';
+
+// Action Menu Component (burger menu)
+const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [menuPosition, setMenuPosition] = useState('bottom');
+    const menuRef = useRef(null);
+    const buttonRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && buttonRef.current) {
+            const rect = buttonRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            // If less than 200px below, open upwards
+            if (spaceBelow < 200) {
+                setMenuPosition('top');
+            } else {
+                setMenuPosition('bottom');
+            }
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <button
+                ref={buttonRef}
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
+                }}
+                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+            >
+                <MoreVertical size={16} />
+            </button>
+
+            {isOpen && (
+                <div className={`absolute right-0 w-32 bg-white rounded-lg shadow-lg border border-[hsl(var(--border))] z-50 py-1 ${menuPosition === 'top' ? 'bottom-full mb-1' : 'mt-1'}`}>
+                    {!employee.deleted_at && (
+                        <>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onEdit(employee);
+                                    setIsOpen(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2"
+                            >
+                                <Edit2 size={14} />
+                                Edit
+                            </button>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    onArchive(employee);
+                                    setIsOpen(false);
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                                <Archive size={14} />
+                                Archive
+                            </button>
+                        </>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+};
 
 const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', locations = [] }) => {
     const isEdit = mode === 'edit';
@@ -74,160 +156,206 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={getTitle()} maxWidth="max-w-md">
-            <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Personal Information */}
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">First Name</label>
-                        <Input
-                            value={data.first_name}
-                            onChange={e => setData('first_name', e.target.value)}
-                            disabled={isView}
-                            error={errors.first_name}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Last Name</label>
-                        <Input
-                            value={data.last_name}
-                            onChange={e => setData('last_name', e.target.value)}
-                            disabled={isView}
-                            error={errors.last_name}
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Contact Number</label>
-                    <Input
-                        value={data.contact_number}
-                        onChange={e => setData('contact_number', e.target.value)}
-                        disabled={isView}
-                        error={errors.contact_number}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Address</label>
-                    <Input
-                        value={data.address}
-                        onChange={e => setData('address', e.target.value)}
-                        disabled={isView}
-                        error={errors.address}
-                    />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Job Title</label>
-                        <Input
-                            value={data.job_title}
-                            onChange={e => setData('job_title', e.target.value)}
-                            disabled={isView}
-                            error={errors.job_title}
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Department</label>
-                        <Input
-                            value={data.department}
-                            onChange={e => setData('department', e.target.value)}
-                            disabled={isView}
-                            error={errors.department}
-                        />
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Assigned Branch</label>
-                    <select
-                        className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
-                        value={data.location_id}
-                        onChange={e => setData('location_id', e.target.value)}
-                        disabled={isView}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200 p-4">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-2xl overflow-hidden border border-[hsl(var(--border))] max-h-[90vh] flex flex-col">
+                {/* Header */}
+                <div className="flex justify-between items-center p-4 border-b border-[hsl(var(--border))] shrink-0 bg-white">
+                    <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">{getTitle()}</h3>
+                    <button
+                        onClick={onClose}
+                        className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                        type="button"
                     >
-                        <option value="">Select a location</option>
-                        {locations.map(loc => (
-                            <option key={loc.id} value={loc.id}>
-                                {loc.name}
-                            </option>
-                        ))}
-                    </select>
-                    {errors.location_id && <p className="text-sm text-red-500">{errors.location_id}</p>}
+                        <X size={20} />
+                    </button>
                 </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Employment Type</label>
-                    <select
-                        className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
-                        value={data.employment_type}
-                        onChange={e => setData('employment_type', e.target.value)}
-                        disabled={isView}
+                {/* Body - Scrollable */}
+                <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                    <form id="employee-form" onSubmit={handleSubmit} className="space-y-6">
+                        {/* Section: Personal Information */}
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider border-b border-[hsl(var(--border))] pb-2">
+                                Personal Information
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">First Name</label>
+                                    <Input
+                                        value={data.first_name}
+                                        onChange={e => setData('first_name', e.target.value)}
+                                        disabled={isView}
+                                        placeholder="e.g. Juan"
+                                    />
+                                    {errors.first_name && <p className="text-sm text-red-500 mt-1">{errors.first_name}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Last Name</label>
+                                    <Input
+                                        value={data.last_name}
+                                        onChange={e => setData('last_name', e.target.value)}
+                                        disabled={isView}
+                                        placeholder="e.g. Dela Cruz"
+                                    />
+                                    {errors.last_name && <p className="text-sm text-red-500 mt-1">{errors.last_name}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Contact Number</label>
+                                    <Input
+                                        value={data.contact_number}
+                                        onChange={e => setData('contact_number', e.target.value)}
+                                        disabled={isView}
+                                        placeholder="e.g. 0912 345 6789"
+                                    />
+                                    {errors.contact_number && <p className="text-sm text-red-500 mt-1">{errors.contact_number}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Address</label>
+                                    <Input
+                                        value={data.address}
+                                        onChange={e => setData('address', e.target.value)}
+                                        disabled={isView}
+                                        placeholder="e.g. 123 Main St, Manila"
+                                    />
+                                    {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address}</p>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Section: Employment Details */}
+                        <div className="space-y-4">
+                            <h4 className="text-sm font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider border-b border-[hsl(var(--border))] pb-2">
+                                Employment Details
+                            </h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Job Title</label>
+                                    <Input
+                                        value={data.job_title}
+                                        onChange={e => setData('job_title', e.target.value)}
+                                        disabled={isView}
+                                        placeholder="e.g. Barista"
+                                    />
+                                    {errors.job_title && <p className="text-sm text-red-500 mt-1">{errors.job_title}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Department</label>
+                                    <Input
+                                        value={data.department}
+                                        onChange={e => setData('department', e.target.value)}
+                                        disabled={isView}
+                                        placeholder="e.g. Operations"
+                                    />
+                                    {errors.department && <p className="text-sm text-red-500 mt-1">{errors.department}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Assigned Branch</label>
+                                    <select
+                                        className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
+                                        value={data.location_id}
+                                        onChange={e => setData('location_id', e.target.value)}
+                                        disabled={isView}
+                                    >
+                                        <option value="">Select a location</option>
+                                        {locations.map(loc => (
+                                            <option key={loc.id} value={loc.id}>
+                                                {loc.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {errors.location_id && <p className="text-sm text-red-500 mt-1">{errors.location_id}</p>}
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Employment Type</label>
+                                    <select
+                                        className="w-full px-4 py-2 border border-[hsl(var(--border))] rounded-lg focus:outline-none focus:ring-2 focus:ring-[hsl(var(--primary))] bg-white text-[hsl(var(--foreground))]"
+                                        value={data.employment_type}
+                                        onChange={e => setData('employment_type', e.target.value)}
+                                        disabled={isView}
+                                    >
+                                        <option value="full_time">Full Time</option>
+                                    </select>
+                                </div>
+                                {/* Clock PIN */}
+                                {(!isView || isEdit) && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Clock-In PIN (4 digits)</label>
+                                        <Input
+                                            type="text"
+                                            inputMode="numeric"
+                                            maxLength={4}
+                                            pattern="[0-9]*"
+                                            placeholder="Enter 4-digit PIN"
+                                            value={data.clock_pin}
+                                            onChange={e => setData('clock_pin', e.target.value.replace(/\D/g, '').slice(0, 4))}
+                                            disabled={isView}
+                                        />
+                                        {errors.clock_pin && <p className="text-sm text-red-500 mt-1">{errors.clock_pin}</p>}
+                                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Required for clocking in</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Section: Compensation */}
+                        {!isView && (
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider border-b border-[hsl(var(--border))] pb-2">
+                                    Compensation
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Hourly Rate (PHP)</label>
+                                        <Input
+                                            type="number"
+                                            value={data.hourly_rate}
+                                            onChange={e => setData('hourly_rate', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="0.00"
+                                        />
+                                        {errors.hourly_rate && <p className="text-sm text-red-500 mt-1">{errors.hourly_rate}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Basic Salary (Monthly)</label>
+                                        <Input
+                                            type="number"
+                                            value={data.basic_salary}
+                                            onChange={e => setData('basic_salary', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="0.00"
+                                        />
+                                        {errors.basic_salary && <p className="text-sm text-red-500 mt-1">{errors.basic_salary}</p>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </form>
+                </div>
+
+                {/* Footer - Actions */}
+                <div className="p-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))]/10 flex justify-end gap-3 shrink-0 rounded-b-xl">
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        onClick={onClose}
+                        className="border border-[hsl(var(--muted))] bg-white hover:bg-[hsl(var(--muted))]"
                     >
-                        <option value="full_time">Full Time</option>
-                        <option value="part_time">Part Time</option>
-                        <option value="contract">Contract</option>
-                    </select>
+                        {isView ? 'Close' : 'Cancel'}
+                    </Button>
+                    {!isView && (
+                        <Button
+                            type="submit"
+                            form="employee-form"
+                            disabled={processing}
+                            variant="primary"
+                            className="shadow-md"
+                        >
+                            {isEdit ? 'Save Changes' : 'Create Employee'}
+                        </Button>
+                    )}
                 </div>
-
-                {/* Compensation */}
-                {!isView && (
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Hourly Rate (PHP)</label>
-                            <Input
-                                type="number"
-                                value={data.hourly_rate}
-                                onChange={e => setData('hourly_rate', e.target.value)}
-                                disabled={isView}
-                                error={errors.hourly_rate}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Basic Salary (Monthly)</label>
-                            <Input
-                                type="number"
-                                value={data.basic_salary}
-                                onChange={e => setData('basic_salary', e.target.value)}
-                                disabled={isView}
-                                error={errors.basic_salary}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Clock PIN */}
-                {!isView && (
-                    <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Clock-In PIN (4 digits)</label>
-                        <Input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={4}
-                            pattern="[0-9]*"
-                            placeholder="Enter 4-digit PIN"
-                            value={data.clock_pin}
-                            onChange={e => setData('clock_pin', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                            error={errors.clock_pin}
-                        />
-                        <p className="text-xs text-[hsl(var(--muted-foreground))] mt-1">Required for clocking in at the kiosk</p>
-                    </div>
-                )}
-
-                {/* Actions */}
-                {!isView && (
-                    <div className="pt-4 flex justify-end gap-3">
-                        <Button type="button" variant="ghost" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" variant="primary" disabled={processing}>
-                            {isEdit ? 'Save Changes' : 'Add Employee'}
-                        </Button>
-                    </div>
-                )}
-            </form>
-        </Modal>
+            </div>
+        </div>
     );
 };
 
@@ -276,6 +404,12 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
         }
     };
 
+    const handleRestore = (employee) => {
+        if (confirm(`Are you sure you want to restore ${employee.name}?`)) {
+            router.post(route('admin.employees.restore', employee.id));
+        }
+    };
+
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header / Actions */}
@@ -294,10 +428,9 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                 {/* Search & Filter */}
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="relative flex-1">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" size={18} />
                         <Input
+                            icon={Search}
                             placeholder="Search employees..."
-                            className="pl-10"
                             value={searchQuery}
                             onChange={handleSearch}
                         />
@@ -331,7 +464,11 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                             {/* 2. SAFETY: Check if employees.data exists before mapping */}
                             {employees?.data?.length > 0 ? (
                                 employees.data.map((employee) => (
-                                    <tr key={employee.id} className="hover:bg-[hsl(var(--muted))]/20 transition-colors">
+                                    <tr
+                                        key={employee.id}
+                                        className="hover:bg-[hsl(var(--muted))]/20 transition-colors cursor-pointer"
+                                        onClick={() => handleView(employee)}
+                                    >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="h-10 w-10 rounded-full bg-[hsl(var(--primary))]/10 flex items-center justify-center text-[hsl(var(--primary))] font-bold">
@@ -365,20 +502,25 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                                                 {employee.deleted_at ? "Archived" : "Active"}
                                             </Badge>
                                         </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="icon-sm" onClick={() => handleView(employee)}>
-                                                    <Eye size={16} />
-                                                </Button>
-                                                {!employee.deleted_at && (
-                                                    <>
-                                                        <Button variant="ghost" size="icon-sm" onClick={() => handleEdit(employee)}>
-                                                            <Edit2 size={16} />
-                                                        </Button>
-                                                        <Button variant="ghost-destructive" size="icon-sm" onClick={() => handleDelete(employee)}>
-                                                            <Trash2 size={16} />
-                                                        </Button>
-                                                    </>
+                                        <td className="px-6 py-4 text-right" onClick={(e) => e.stopPropagation()}>
+                                            <div className="flex justify-end">
+                                                {employee.deleted_at ? (
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => handleRestore(employee)}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <RotateCcw size={14} />
+                                                        Restore
+                                                    </Button>
+                                                ) : (
+                                                    <ActionMenu
+                                                        employee={employee}
+                                                        onView={handleView}
+                                                        onEdit={handleEdit}
+                                                        onArchive={handleDelete}
+                                                    />
                                                 )}
                                             </div>
                                         </td>

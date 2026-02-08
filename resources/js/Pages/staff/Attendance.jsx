@@ -7,27 +7,17 @@ import { format, parseISO, intervalToDuration } from 'date-fns';
 const Attendance = ({ employees, history }) => {
     const { flash } = usePage().props;
 
-    // Kiosk Logic
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState('');
+    // Kiosk Logic - Using server-side state only (no localStorage)
+    const [selectedEmployeeId, setSelectedEmployeeId] = useState(flash?.last_clocked_id || '');
     const { data, setData, post, processing, errors } = useForm({
-        user_id: '',
+        user_id: flash?.last_clocked_id || '',
         pin: '',
     });
 
-    // 1. On Mount: Check LocalStorage first
-    useEffect(() => {
-        const savedId = localStorage.getItem('kiosk_selected_id');
-        if (savedId) {
-            setSelectedEmployeeId(savedId);
-            setData('user_id', savedId);
-        }
-    }, []);
-
-    // 2. Also listen to backend Flash data
+    // Listen to backend Flash data for last clocked employee
     useEffect(() => {
         if (flash?.last_clocked_id) {
             setSelectedEmployeeId(flash.last_clocked_id);
-            localStorage.setItem('kiosk_selected_id', flash.last_clocked_id);
             setData('user_id', flash.last_clocked_id);
         }
     }, [flash]);
@@ -40,7 +30,6 @@ const Attendance = ({ employees, history }) => {
     const handleEmployeeChange = (e) => {
         const newId = e.target.value;
         setSelectedEmployeeId(newId);
-        localStorage.setItem('kiosk_selected_id', newId);
         setData('user_id', newId);
     };
 

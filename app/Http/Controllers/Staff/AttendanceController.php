@@ -5,12 +5,20 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\User;
+use App\Services\AttendanceService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class AttendanceController extends Controller
 {
+    protected $attendanceService;
+
+    public function __construct(AttendanceService $attendanceService)
+    {
+        $this->attendanceService = $attendanceService;
+    }
+
     public function index()
     {
         $employees = User::where('is_admin', false)
@@ -140,22 +148,16 @@ class AttendanceController extends Controller
         }
 
         $clockOut = now();
-        $minutesWorked = $record->clock_in->diffInMinutes($clockOut);
-        $elapsedHours = $minutesWorked / 60;
-
-        $deduction = ($elapsedHours >= 6) ? 1.0 : 0.0;
-        $netHours = max(0, $elapsedHours - $deduction);
-        $regularHours = min($netHours, 8.0);
-        $overtimeHours = max(0, $netHours - 8.0);
+        $hours = $this->attendanceService->calculateHoursWorked($record->clock_in, $clockOut);
 
         $record->update([
             'clock_out' => $clockOut,
-            'total_hours' => round($netHours, 2),
-            'overtime_hours' => round($overtimeHours, 2),
+            'total_hours' => $hours['total_hours'],
+            'overtime_hours' => $hours['overtime_hours'],
         ]);
 
         return back()
-            ->with('success', 'Clocked out. Paid: ' . round($netHours, 2) . ' hrs (OT: ' . round($overtimeHours, 2) . ')')
+            ->with('success', 'Clocked out. Paid: ' . $hours['total_hours'] . ' hrs (OT: ' . $hours['overtime_hours'] . ')')
             ->with('last_clocked_id', $userId);
     }
 }
