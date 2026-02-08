@@ -111,7 +111,7 @@ class ReportsController extends Controller
         }
 
         // Recent orders
-        $recentOrders = Order::with('items.product')
+        $recentOrders = Order::with(['items.product', 'createdBy.employee.location'])
             ->where('status', 'completed')
             ->orderByDesc('created_at')
             ->limit(10)
@@ -123,6 +123,7 @@ class ReportsController extends Controller
                     'items_count' => $order->items->count(),
                     'total' => (float) $order->total,
                     'payment_method' => $order->payment_method,
+                    'location' => $order->createdBy->employee->location->name ?? 'N/A',
                 ];
             });
 
@@ -328,7 +329,7 @@ class ReportsController extends Controller
             $monthEnd = $now->copy()->subMonths($i)->endOfMonth();
 
             $cost = DB::table('payrolls')
-                ->whereBetween('start_date', [$monthStart, $monthEnd])
+                ->whereBetween('end_date', [$monthStart, $monthEnd])
                 ->sum('total_amount');
 
             $monthlyPayrollCost[] = [
@@ -338,21 +339,30 @@ class ReportsController extends Controller
         }
 
         // 6. Recent Payroll History
-        $recentPayrolls = DB::table('payrolls')
+        $recentPayrollsData = DB::table('payrolls')
             ->orderBy('created_at', 'desc')
             ->limit(10)
-            ->get()
-            ->map(function ($payroll) {
-                return [
-                    'id' => $payroll->id,
-                    'reference' => 'PAY-' . str_pad($payroll->id, 5, '0', STR_PAD_LEFT),
-                    'period' => Carbon::parse($payroll->start_date)->format('M d') . ' - ' . Carbon::parse($payroll->end_date)->format('M d, Y'),
-                    'employees' => DB::table('payslips')->where('payroll_id', $payroll->id)->count(), // Count employees in this payroll
-                    'amount' => $payroll->total_amount,
-                    'status' => $payroll->status,
-                    'date' => $payroll->payment_date ? Carbon::parse($payroll->payment_date)->format('M d, Y') : 'N/A',
-                ];
-            });
+            ->get();
+
+        $payrollIds = $recentPayrollsData->pluck('id');
+
+        $payslipCounts = DB::table('payslips')
+            ->whereIn('payroll_id', $payrollIds)
+            ->select('payroll_id', DB::raw('count(*) as count'))
+            ->groupBy('payroll_id')
+            ->pluck('count', 'payroll_id');
+
+        $recentPayrolls = $recentPayrollsData->map(function ($payroll) use ($payslipCounts) {
+            return [
+                'id' => $payroll->id,
+                'reference' => 'PAY-' . str_pad($payroll->id, 5, '0', STR_PAD_LEFT),
+                'period' => Carbon::parse($payroll->start_date)->format('M d') . ' - ' . Carbon::parse($payroll->end_date)->format('M d, Y'),
+                'employees' => $payslipCounts[$payroll->id] ?? 0,
+                'amount' => $payroll->total_amount,
+                'status' => $payroll->status,
+                'date' => $payroll->payment_date ? Carbon::parse($payroll->payment_date)->format('M d, Y') : 'N/A',
+            ];
+        });
 
         return Inertia::render('admin/reports/PayrollReports', [
             'stats' => [

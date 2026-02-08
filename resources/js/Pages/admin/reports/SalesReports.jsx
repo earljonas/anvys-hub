@@ -20,13 +20,14 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
 
     const exportToCSV = () => {
         // Create CSV content from recent orders
-        const headers = ['Order Number', 'Date', 'Items', 'Total', 'Payment Method'];
+        const headers = ['Order Number', 'Date', 'Items', 'Total', 'Payment Method', 'Location'];
         const rows = recentOrders.map(order => [
             order.order_number,
             order.date,
             order.items_count,
             order.total.toFixed(2),
             order.payment_method,
+            order.location,
         ]);
 
         const csvContent = [
@@ -165,6 +166,7 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
                                     <th className="text-center py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Items</th>
                                     <th className="text-right py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Total</th>
                                     <th className="text-center py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Payment</th>
+                                    <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -184,6 +186,7 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
                                                 {order.payment_method}
                                             </span>
                                         </td>
+                                        <td className="py-3 px-2 text-[hsl(var(--muted-foreground))] text-xs">{order.location}</td>
                                     </tr>
                                 ))}
                             </tbody>

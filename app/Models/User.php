@@ -27,7 +27,6 @@ class User extends Authenticatable
         'address',
         'password',
         'clock_pin',
-        'is_admin',
     ];
 
     /**

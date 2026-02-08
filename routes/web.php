@@ -33,8 +33,7 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
     Route::get('/settings', fn() => Inertia::render('admin/Settings'));
-    Route::get('/attendance', fn() => Inertia::render('admin/employee/Attendance'));
-    Route::get('/payroll', fn() => Inertia::render('admin/employee/Payroll'));
+
 
     Route::get('/events', [EventController::class, 'index'])->name('admin.events');
     Route::post('/events', [EventController::class, 'store'])->name('admin.events.store');

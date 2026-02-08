@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Edit2, Archive, ChevronLeft, ChevronRight, ArrowUpDown, MoreVertical } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
@@ -27,38 +28,75 @@ const StatusBadge = ({ status }) => {
 
 const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const menuRef = useRef(null);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const triggerRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target) &&
+                triggerRef.current &&
+                !triggerRef.current.contains(event.target)
+            ) {
                 setIsOpen(false);
+            }
+        };
+
+        const handleScroll = () => {
+            if (isOpen && triggerRef.current) {
+                const rect = triggerRef.current.getBoundingClientRect();
+                setPosition({
+                    top: rect.bottom + window.scrollY + 5,
+                    left: rect.right - 128 + window.scrollX
+                });
             }
         };
 
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('scroll', handleScroll, true);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScroll, true);
         };
     }, [isOpen]);
 
+    const toggleMenu = (e) => {
+        e.stopPropagation();
+        if (!isOpen) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setPosition({
+                top: rect.bottom + window.scrollY + 5,
+                left: rect.right - 128 + window.scrollX
+            });
+        }
+        setIsOpen(!isOpen);
+    };
+
     return (
-        <div className="relative" ref={menuRef}>
+        <div className="relative">
             <button
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
+                ref={triggerRef}
+                onClick={toggleMenu}
                 className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
                 <MoreVertical size={16} />
             </button>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-[hsl(var(--border))] z-50 py-1">
+            {isOpen && createPortal(
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        top: `${position.top}px`,
+                        left: `${position.left}px`,
+                        position: 'absolute'
+                    }}
+                    className="w-32 bg-[hsl(var(--card))] rounded-lg shadow-lg border border-[hsl(var(--border))] z-[9999] py-1"
+                >
                     <button
                         onClick={(e) => {
                             e.stopPropagation();
@@ -92,7 +130,8 @@ const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
                         <Archive size={14} />
                         Archive
                     </button>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

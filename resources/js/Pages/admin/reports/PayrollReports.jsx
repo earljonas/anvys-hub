@@ -38,6 +38,24 @@ const PayrollReports = ({
     const exportToCSV = () => {
         const today = new Date().toISOString().split('T')[0];
 
+        // Define sanitizer function within exportToCSV
+        const sanitizeCsvCell = (cell) => {
+            let stringValue = (cell === null || cell === undefined) ? '' : String(cell);
+
+            // Neutralize potential formulas
+            if (/^[=+\-@]/.test(stringValue)) {
+                stringValue = "'" + stringValue;
+            }
+
+            // Escape double quotes by doubling them
+            if (stringValue.includes('"')) {
+                stringValue = stringValue.replace(/"/g, '""');
+            }
+
+            // Wrap in double quotes
+            return `"${stringValue}"`;
+        };
+
         // Summary section
         let csvContent = 'PAYROLL SUMMARY REPORT\n';
         csvContent += `Generated on,${today}\n\n`;
@@ -53,7 +71,7 @@ const PayrollReports = ({
         csvContent += 'MONTHLY PAYROLL COST\n';
         csvContent += 'Month,Amount\n';
         monthlyPayrollCost.forEach(m => {
-            csvContent += `${m.month},${m.cost}\n`;
+            csvContent += `${sanitizeCsvCell(m.month)},${m.cost}\n`;
         });
         csvContent += '\n';
 
@@ -61,7 +79,8 @@ const PayrollReports = ({
         csvContent += 'RECENT PAYROLLS\n';
         csvContent += 'Reference,Period,Employees,Amount,Status,Date\n';
         recentPayrolls.forEach(p => {
-            csvContent += `${p.reference},"${p.period}",${p.employees},${p.amount},${p.status},${p.date}\n`;
+            // Apply sanitizer to string fields
+            csvContent += `${sanitizeCsvCell(p.reference)},${sanitizeCsvCell(p.period)},${p.employees},${p.amount},${sanitizeCsvCell(p.status)},${p.date}\n`;
         });
 
         // Download

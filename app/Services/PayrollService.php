@@ -90,7 +90,13 @@ class PayrollService
         $totalHours = $attendance->sum('total_hours');
         $overtimeHours = $attendance->sum('overtime_hours');
         $regularHours = max(0, $totalHours - $overtimeHours);
-        $daysWorked = $attendance->count();
+
+        $daysWorked = $attendance->pluck('clock_in')
+            ->map(function ($date) {
+                return Carbon::parse($date)->toDateString();
+            })
+            ->unique()
+            ->count();
 
         if ($totalHours <= 0)
             return null;
@@ -104,7 +110,7 @@ class PayrollService
         $overtimePay = $overtimeHours * $profile->hourly_rate * $overtimeRateMultiplier;
         $grossPay = $regularPay + $overtimePay;
 
-        $monthlyDeductions = $this->calculateDeductions($grossPay, $profile->basic_salary);
+        $monthlyDeductions = $this->calculateDeductions($profile->basic_salary);
 
         $finalDeductions = [];
         $totalDeductions = 0;
@@ -139,7 +145,7 @@ class PayrollService
         ];
     }
 
-    private function calculateDeductions($grossPay, $monthlyBasicSalary)
+    private function calculateDeductions($monthlyBasicSalary)
     {
         $msc = min($monthlyBasicSalary, 30000);
         $sss = $msc * 0.045;
