@@ -3,6 +3,7 @@ import AdminLayout from '../../../Layouts/AdminLayout';
 import { DollarSign, TrendingUp, Clock, Calendar, Users, Download } from 'lucide-react';
 import StatCard from '../../../Components/reports/StatCard';
 import Button from '../../../Components/common/Button';
+import BarChart from '../../../Components/reports/BarChart';
 
 const PayrollReports = ({
     stats = {
@@ -141,31 +142,16 @@ const PayrollReports = ({
                         <DollarSign size={20} /> Monthly Payroll Cost
                     </h3>
 
-                    <div className="h-64 flex items-end gap-2 md:gap-4">
-                        {monthlyPayrollCost && monthlyPayrollCost.length > 0 ? (
-                            monthlyPayrollCost.map((data, index) => {
-                                const heightPercentage = (data.cost / maxCost) * 100;
-                                return (
-                                    <div key={index} className="flex-1 flex flex-col items-center gap-2 group">
-                                        <div className="relative w-full flex items-end justify-center h-full">
-                                            <div
-                                                className="w-full bg-pink-100 dark:bg-pink-900/30 rounded-t-lg transition-all duration-500 hover:bg-pink-200 dark:hover:bg-pink-800/40 relative group-hover:shadow-lg"
-                                                style={{ height: `${heightPercentage}%`, minHeight: '4px' }}
-                                            >
-                                                <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-popover text-popover-foreground text-xs font-bold px-2 py-1 rounded shadow-sm opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 border">
-                                                    {formatCurrency(data.cost)}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <span className="text-xs font-medium text-muted-foreground">{data.month}</span>
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                No payroll data available.
-                            </div>
-                        )}
+                    <div className="h-64 mt-4">
+                        <BarChart
+                            data={monthlyPayrollCost}
+                            height={250}
+                            labelKey="month"
+                            valueKey="cost"
+                            formatValue={formatCurrency}
+                            barColorGradientStart="hsl(var(--primary))"
+                            barColorGradientEnd="hsl(var(--primary)/0.6)"
+                        />
                     </div>
                 </div>
 

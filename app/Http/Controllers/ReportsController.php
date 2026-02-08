@@ -123,7 +123,7 @@ class ReportsController extends Controller
                     'items_count' => $order->items->count(),
                     'total' => (float) $order->total,
                     'payment_method' => $order->payment_method,
-                    'location' => $order->createdBy->employee->location->name ?? 'N/A',
+                    'location' => $order->createdBy?->employee?->location?->name ?? 'N/A',
                 ];
             });
 
