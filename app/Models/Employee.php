@@ -4,7 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes; // Recommended to match User soft deletes
 
 class Employee extends Model
 {
@@ -13,42 +14,31 @@ class Employee extends Model
     protected $fillable = [
         'user_id',
         'employee_id',
-        'name',
-        'email',
-        'contact_number',
-        'position',
+        'hourly_rate',
+        'basic_salary',
+        'tin_number',
+        'sss_number',
+        'philhealth_number',
+        'pagibig_number',
+        'bank_details',
+        'employment_type',
         'location_id',
-        'daily_rate',
-        'status',
+        'job_title',
+        'department',
     ];
 
     protected $casts = [
-        'daily_rate' => 'decimal:2',
+        'hourly_rate' => 'decimal:2',
+        'basic_salary' => 'decimal:2',
     ];
 
-    /**
-     * Get the user account associated with this employee.
-     */
-    public function user()
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the location this employee is assigned to.
-     */
-    public function location()
+    public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
-    }
-
-    /**
-     * Generate a unique employee ID.
-     */
-    public static function generateEmployeeId(): string
-    {
-        $lastEmployee = self::withTrashed()->orderBy('id', 'desc')->first();
-        $nextNumber = $lastEmployee ? ((int) substr($lastEmployee->employee_id, 4)) + 1 : 1;
-        return 'EMP-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
     }
 }

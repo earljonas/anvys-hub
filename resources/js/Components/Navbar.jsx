@@ -2,21 +2,35 @@ import React from 'react';
 import { Link, usePage } from '@inertiajs/react';
 import {
     Clock,
+    Calendar,
     ShoppingCart,
     Package,
-    MapPin,
     Sun,
-    LogOut
+    Moon,
+    LogOut,
+    MapPin,
+    User
 } from 'lucide-react';
 
 const Navbar = () => {
-    // Get the current URL and employee data from shared props
     const { url, props } = usePage();
-    const { employee } = props;
+    const auth = props.auth || {};
+    const user = auth.user || null;
+    const employee = user?.employee || null;
+    const location = employee?.location || null;
 
-    // Helper to determine styles for active vs inactive links
+    React.useEffect(() => {
+        const storedTheme = localStorage.getItem('theme');
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+        if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark)) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+    }, []);
+
     const getLinkClasses = (path) => {
-        // Check if the current URL starts with the link path
         const isActive = url.startsWith(path);
 
         return isActive
@@ -27,26 +41,45 @@ const Navbar = () => {
     return (
         <nav className="h-20 border-b border-[hsl(var(--border))] bg-white/80 backdrop-blur-sm px-6 flex items-center justify-between sticky top-0 z-50">
 
-            {/* LEFT: Logo & Brand */}
-            <div className="flex items-center gap-3">
-                <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
-                    <img
-                        src="/logo.png"
-                        alt="Anvy's Logo"
-                        className="w-full h-full object-cover"
-                    />
+            <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 flex items-center justify-center overflow-hidden">
+                        <img
+                            src="/logo.png"
+                            alt="Anvy's Logo"
+                            className="w-full h-full object-cover"
+                        />
+                    </div>
+                    <div className="flex flex-col">
+                        <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                            Anvy's Hub
+                        </h1>
+                    </div>
                 </div>
-                <div className="flex flex-col">
-                    <h1 className="text-xl font-bold text-[hsl(var(--foreground))]">
-                        Anvy's Hub
-                    </h1>
-                </div>
+
+                {/* Employee Info Display */}
+                {user && (
+                    <div className="hidden md:flex items-center gap-3 pl-4 border-l border-[hsl(var(--border))]">
+                        <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))]/10 flex items-center justify-center text-[hsl(var(--primary))] font-bold">
+                            {user.name?.charAt(0)?.toUpperCase() || <User size={16} />}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                                {user.name || 'Staff Member'}
+                            </span>
+                            {location && (
+                                <span className="text-xs text-[hsl(var(--muted-foreground))] flex items-center gap-1">
+                                    <MapPin size={10} />
+                                    {location.name}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* CENTER: Navigation Links */}
             <div className="flex items-center gap-3">
 
-                {/* 1. Attendance Link */}
                 <Link
                     href="/staff/attendance"
                     className={getLinkClasses('/staff/attendance')}
@@ -55,7 +88,14 @@ const Navbar = () => {
                     <span className="font-semibold text-sm">Attendance</span>
                 </Link>
 
-                {/* 2. POS Link */}
+                <Link
+                    href="/staff/schedule"
+                    className={getLinkClasses('/staff/schedule')}
+                >
+                    <Calendar size={18} />
+                    <span className="font-semibold text-sm">Schedule</span>
+                </Link>
+
                 <Link
                     href="/staff/pos"
                     className={getLinkClasses('/staff/pos')}
@@ -64,7 +104,6 @@ const Navbar = () => {
                     <span className="font-medium text-sm">POS</span>
                 </Link>
 
-                {/* 3. Inventory Link */}
                 <Link
                     href="/staff/inventory"
                     className={getLinkClasses('/staff/inventory')}
@@ -74,32 +113,26 @@ const Navbar = () => {
                 </Link>
             </div>
 
-            {/* RIGHT: Status & Actions */}
             <div className="flex items-center gap-6">
 
-                {/* Clock Status Badge */}
-                <div className="hidden md:flex items-center gap-2 px-4 py-1.5 bg-red-50 text-red-500 rounded-full border border-red-100">
-                    <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
-                    <span className="text-sm font-semibold">Clocked Out</span>
-                </div>
-
-                {/* Divider */}
-                <div className="h-8 w-px bg-[hsl(var(--border))]" />
-
-                {/* Location - Dynamic based on employee */}
-                <div className="flex items-center gap-2 text-[hsl(var(--muted-foreground))]">
-                    <MapPin size={18} />
-                    <span className="text-sm font-medium">
-                        {employee?.locationName || 'No Location Assigned'}
-                    </span>
-                </div>
-
-                {/* Theme Toggle */}
-                <button className="p-2 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-colors">
-                    <Sun size={20} />
+                <button
+                    onClick={() => {
+                        const newTheme = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+                        if (newTheme === 'dark') {
+                            document.documentElement.classList.add('dark');
+                            localStorage.setItem('theme', 'dark');
+                        } else {
+                            document.documentElement.classList.remove('dark');
+                            localStorage.setItem('theme', 'light');
+                        }
+                        window.dispatchEvent(new Event('storage'));
+                    }}
+                    className="p-2 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-colors"
+                >
+                    <span className="dark:hidden"><Sun size={20} /></span>
+                    <span className="hidden dark:inline"><Moon size={20} /></span>
                 </button>
 
-                {/* Logout Button (Functional) */}
                 <Link
                     href="/logout"
                     method="post"

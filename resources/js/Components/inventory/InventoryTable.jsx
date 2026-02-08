@@ -1,5 +1,5 @@
-import React from 'react';
-import { Edit2, Trash2, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Edit2, Archive, ChevronLeft, ChevronRight, ArrowUpDown, MoreVertical } from 'lucide-react';
 
 const StatusBadge = ({ status }) => {
     let colorClass = "";
@@ -22,6 +22,79 @@ const StatusBadge = ({ status }) => {
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${colorClass}`}>
             {status}
         </span>
+    );
+};
+
+const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const menuRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (menuRef.current && !menuRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        };
+
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isOpen]);
+
+    return (
+        <div className="relative" ref={menuRef}>
+            <button
+                onClick={(e) => {
+                    e.stopPropagation();
+                    setIsOpen(!isOpen);
+                }}
+                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+            >
+                <MoreVertical size={16} />
+            </button>
+
+            {isOpen && (
+                <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-[hsl(var(--border))] z-50 py-1">
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAdjustStock(item);
+                            setIsOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2"
+                    >
+                        <ArrowUpDown size={14} />
+                        Adjust
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onEdit(item);
+                            setIsOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2"
+                    >
+                        <Edit2 size={14} />
+                        Edit
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onDelete(item.id);
+                            setIsOpen(false);
+                        }}
+                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                    >
+                        <Archive size={14} />
+                        Archive
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 
@@ -54,25 +127,13 @@ const InventoryTable = ({ items, currentPage, totalPages, onPageChange, onDelete
                                         <StatusBadge status={item.status} />
                                     </td>
                                     <td className="py-4 px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                                        <div className="flex justify-end gap-2">
-                                            <button
-                                                onClick={() => onAdjustStock(item)}
-                                                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                                            >
-                                                <ArrowUpDown size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => onEdit(item)}
-                                                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
-                                            >
-                                                <Edit2 size={16} />
-                                            </button>
-                                            <button
-                                                onClick={() => onDelete(item.id)}
-                                                className="p-2 hover:bg-red-50 rounded-lg text-red-500 hover:text-red-600 transition-colors"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                        <div className="flex justify-end">
+                                            <ActionMenu
+                                                item={item}
+                                                onAdjustStock={onAdjustStock}
+                                                onEdit={onEdit}
+                                                onDelete={onDelete}
+                                            />
                                         </div>
                                     </td>
                                 </tr>

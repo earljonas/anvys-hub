@@ -55,8 +55,22 @@ class InventoryController extends Controller
                 ];
             });
 
+        $archivedItems = InventoryItem::onlyTrashed()
+            ->with('location')
+            ->orderBy('deleted_at', 'desc')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'name' => $item->name,
+                    'location' => $item->location?->name ?? 'All Locations',
+                    'deletedAt' => $item->deleted_at->format('Y-m-d H:i A'),
+                ];
+            });
+
         return Inertia::render('admin/Inventory', [
             'items' => $items,
+            'archivedItems' => $archivedItems,
             'locations' => $locations,
             'logs' => $logs,
         ]);
@@ -206,7 +220,7 @@ class InventoryController extends Controller
         $user = Auth::user();
 
         // Get staff's assigned location (if they have one via employee record)
-        $employee = \App\Models\Employee::where('email', $user->email)->first();
+        $employee = $user->employee;
         $locationId = $employee?->location_id;
 
         $itemsQuery = InventoryItem::with('location');

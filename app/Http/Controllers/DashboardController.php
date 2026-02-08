@@ -44,8 +44,11 @@ class DashboardController extends Controller
             ->count();
 
         // Pending Payroll (active employees count)
-        $activeEmployeesCount = Employee::where('status', 'active')->count();
-        $pendingPayroll = Employee::where('status', 'active')->sum('daily_rate') * 15; // Estimate
+        $activeEmployeesCount = Employee::where('status', 'Active')->count();
+        // Estimate: (Basic Salary / 2) + (Hourly Rate * 8 hours * 15 days)
+        $monthlySalaries = Employee::where('status', 'Active')->sum('basic_salary');
+        $hourlyRates = Employee::where('status', 'Active')->sum('hourly_rate');
+        $pendingPayroll = ($monthlySalaries / 2) + ($hourlyRates * 8 * 15);
 
         // Low Stock Alerts (get actual items)
         $lowStockItems = InventoryItem::with('location')

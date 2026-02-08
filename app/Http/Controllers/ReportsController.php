@@ -126,7 +126,7 @@ class ReportsController extends Controller
                 ];
             });
 
-        return Inertia::render('admin/Reports', [
+        return Inertia::render('admin/reports/SalesReports', [
             'stats' => [
                 'monthlyRevenue' => round($monthlyRevenue, 2),
                 'revenueChange' => $revenueChange,
@@ -153,9 +153,8 @@ class ReportsController extends Controller
 
         $stockLogs = StockLog::with(['inventoryItem', 'user.employee', 'location'])
             ->latest('logged_at')
-            ->limit(10)
-            ->get()
-            ->map(function ($log) {
+            ->paginate(10, ['*'], 'logs_page')
+            ->through(function ($log) {
                 // Use employee name if available, otherwise fall back to user name
                 $userName = 'System';
                 if ($log->user) {
@@ -177,9 +176,8 @@ class ReportsController extends Controller
         $lowStockItems = InventoryItem::with('location')
             ->whereIn('status', ['Low Stock', 'Out of Stock'])
             ->orderBy('stock')
-            ->limit(10)
-            ->get()
-            ->map(function ($item) {
+            ->paginate(10, ['*'], 'alerts_page')
+            ->through(function ($item) {
                 return [
                     'id' => $item->id,
                     'name' => $item->name,
@@ -266,6 +264,107 @@ class ReportsController extends Controller
             ],
             'upcomingEvents' => $upcomingEvents,
             'monthlyEvents' => $monthlyEvents,
+        ]);
+    }
+
+    /**
+     * Display the Payroll Reports page.
+     */
+    public function payroll()
+    {
+        $now = Carbon::now();
+        $startOfYear = $now->copy()->startOfYear();
+
+        // 1. Total Payroll (Year to Date)
+        $totalPayrollYTD = DB::table('payrolls') // Assuming 'payrolls' table exists
+            ->whereBetween('start_date', [$startOfYear, $now])
+            ->sum('total_amount');
+
+        // 2. Average Net Pay (Last 6 Months) - Approximated from recent payrolls
+        // If you have a detailed 'payslips' table linked to 'payrolls', use that.
+        // For simplicity, let's assume we average the total_amount of payrolls for now,
+        // or average the net_pay from payslips if available.
+        // Let's go with average payroll run total for now or average per employee if possible.
+        // Let's try average employee net pay from payslips over the last 6 months.
+        $sixMonthsAgo = $now->copy()->subMonths(6);
+        $averageNetPay = DB::table('payslips')
+            ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
+            ->where('payrolls.start_date', '>=', $sixMonthsAgo)
+            ->avg('payslips.net_pay');
+
+        // 3. Total Deductions (Year to Date)
+        // Assuming deductions are stored in payslips or you have a way to calculate them.
+        // If 'deductions' column in payslips is JSON, we might need to sum it up in PHP or use a raw query.
+        // For this example, let's assume we can sum 'gross_pay' - 'net_pay' to get deductions
+        // OR if you have a specific deductions column.
+        $totalDeductionsYTD = DB::table('payslips')
+            ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
+            ->whereBetween('payrolls.start_date', [$startOfYear, $now])
+            ->selectRaw('SUM(gross_pay - net_pay) as total_deductions')
+            ->value('total_deductions');
+
+        // 4. Pending Payrolls
+        $pendingPayrolls = DB::table('payrolls')
+            ->whereIn('status', ['Pending', 'draft', 'Draft'])
+            ->count();
+
+        // 5. Total Employees on Payroll
+        $totalEmployeesOnPayroll = DB::table('payslips')
+            ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
+            ->whereBetween('payrolls.start_date', [$startOfYear, $now])
+            ->distinct('payslips.user_id')
+            ->count('payslips.user_id');
+
+        // 6. Total Hours Worked (YTD)
+        $totalHoursWorked = DB::table('payslips')
+            ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
+            ->whereBetween('payrolls.start_date', [$startOfYear, $now])
+            ->sum('payslips.hours_worked');
+
+        // 7. Monthly Payroll Cost (Last 6 Months) - based on start_date for better visibility
+        $monthlyPayrollCost = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $monthStart = $now->copy()->subMonths($i)->startOfMonth();
+            $monthEnd = $now->copy()->subMonths($i)->endOfMonth();
+
+            $cost = DB::table('payrolls')
+                ->whereBetween('start_date', [$monthStart, $monthEnd])
+                ->sum('total_amount');
+
+            $monthlyPayrollCost[] = [
+                'month' => $monthStart->format('M'),
+                'cost' => (float) $cost,
+            ];
+        }
+
+        // 6. Recent Payroll History
+        $recentPayrolls = DB::table('payrolls')
+            ->orderBy('created_at', 'desc')
+            ->limit(10)
+            ->get()
+            ->map(function ($payroll) {
+                return [
+                    'id' => $payroll->id,
+                    'reference' => 'PAY-' . str_pad($payroll->id, 5, '0', STR_PAD_LEFT),
+                    'period' => Carbon::parse($payroll->start_date)->format('M d') . ' - ' . Carbon::parse($payroll->end_date)->format('M d, Y'),
+                    'employees' => DB::table('payslips')->where('payroll_id', $payroll->id)->count(), // Count employees in this payroll
+                    'amount' => $payroll->total_amount,
+                    'status' => $payroll->status,
+                    'date' => $payroll->payment_date ? Carbon::parse($payroll->payment_date)->format('M d, Y') : 'N/A',
+                ];
+            });
+
+        return Inertia::render('admin/reports/PayrollReports', [
+            'stats' => [
+                'totalPayrollYTD' => (float) ($totalPayrollYTD ?? 0),
+                'averageNetPay' => (float) ($averageNetPay ?? 0),
+                'totalDeductionsYTD' => (float) ($totalDeductionsYTD ?? 0),
+                'pendingPayrolls' => $pendingPayrolls,
+                'totalEmployeesOnPayroll' => $totalEmployeesOnPayroll,
+                'totalHoursWorked' => (float) ($totalHoursWorked ?? 0),
+            ],
+            'monthlyPayrollCost' => $monthlyPayrollCost,
+            'recentPayrolls' => $recentPayrolls,
         ]);
     }
 }

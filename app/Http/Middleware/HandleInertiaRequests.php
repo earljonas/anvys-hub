@@ -44,7 +44,7 @@ class HandleInertiaRequests extends Middleware
             if ($emp) {
                 $employee = [
                     'id' => $emp->id,
-                    'name' => $emp->name,
+                    'name' => $emp->user ? $emp->user->name : 'Unknown',
                     'locationId' => $emp->location_id,
                     'locationName' => $emp->location?->name,
                 ];

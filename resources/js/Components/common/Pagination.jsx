@@ -2,8 +2,8 @@ import React from 'react';
 import { Link } from '@inertiajs/react';
 
 const Pagination = ({ links }) => {
-    // If only one page, don't show pagination
-    if (links.length <= 3) return null;
+    // If only one page (or less), don't show pagination
+    if (!links || links.length <= 3) return null;
 
     return (
         <div className="flex flex-wrap gap-1 justify-center mt-6">
@@ -25,6 +25,8 @@ const Pagination = ({ links }) => {
                         `}
                         disabled={!link.url}
                         dangerouslySetInnerHTML={{ __html: link.label }}
+                        preserveScroll
+                        preserveState
                     />
                 );
             })}
