@@ -37,23 +37,49 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = null;
         $employee = null;
 
         if (Auth::check()) {
+            $authUser = Auth::user();
             $emp = Employee::where('user_id', Auth::id())->with('location')->first();
-            if ($emp) {
-                $employee = [
-                    'id' => $emp->id,
-                    'name' => $emp->user ? $emp->user->name : 'Unknown',
-                    'locationId' => $emp->location_id,
-                    'locationName' => $emp->location?->name,
+
+            $location = null;
+            if ($emp && $emp->location) {
+                $location = [
+                    'id' => $emp->location->id,
+                    'name' => $emp->location->name,
                 ];
             }
+
+            $employee = $emp ? [
+                'id' => $emp->id,
+                'name' => $authUser->name ?? 'Unknown',
+                'locationId' => $emp->location_id,
+                'locationName' => $emp->location?->name,
+                'location' => $location,
+            ] : null;
+
+            $user = [
+                'id' => $authUser->id,
+                'name' => $authUser->name,
+                'email' => $authUser->email,
+                'is_admin' => $authUser->is_admin,
+                'employee' => $employee,
+            ];
         }
 
         return [
             ...parent::share($request),
+            'auth' => [
+                'user' => $user,
+            ],
             'employee' => $employee,
+            'flash' => [
+                'success' => fn() => $request->session()->get('success'),
+                'error' => fn() => $request->session()->get('error'),
+                'status' => fn() => $request->session()->get('status'),
+            ],
         ];
     }
 }

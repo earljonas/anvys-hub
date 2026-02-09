@@ -271,7 +271,7 @@ const Attendance = ({ records, filters }) => {
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             <Head title="Attendance" />
 
             {/* Header Card */}
