@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Order;
+use App\Models\User;
 use App\Models\OrderItem;
 use App\Models\Product;
 use App\Models\Event;
@@ -282,10 +283,6 @@ class ReportsController extends Controller
             ->sum('total_amount');
 
         // 2. Average Net Pay (Last 6 Months) - Approximated from recent payrolls
-        // If you have a detailed 'payslips' table linked to 'payrolls', use that.
-        // For simplicity, let's assume we average the total_amount of payrolls for now,
-        // or average the net_pay from payslips if available.
-        // Let's go with average payroll run total for now or average per employee if possible.
         // Let's try average employee net pay from payslips over the last 6 months.
         $sixMonthsAgo = $now->copy()->subMonths(6);
         $averageNetPay = DB::table('payslips')
@@ -310,11 +307,7 @@ class ReportsController extends Controller
             ->count();
 
         // 5. Total Employees on Payroll
-        $totalEmployeesOnPayroll = DB::table('payslips')
-            ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
-            ->whereBetween('payrolls.start_date', [$startOfYear, $now])
-            ->distinct('payslips.user_id')
-            ->count('payslips.user_id');
+        $totalEmployeesOnPayroll = User::where('is_admin', false)->count();
 
         // 6. Total Hours Worked (YTD)
         $totalHoursWorked = DB::table('payslips')

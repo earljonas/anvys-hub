@@ -1,37 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { Head, usePage, router } from '@inertiajs/react';
 import StaffLayout from '@/Layouts/StaffLayout';
-import { Clock, AlertCircle, MapPin, User, History } from 'lucide-react';
+import { Clock, AlertCircle, MapPin, History, X } from 'lucide-react';
 import { format, parseISO, intervalToDuration } from 'date-fns';
 
-const Attendance = ({ employees, history }) => {
-    const { flash } = usePage().props;
+// PIN Modal Component
+const PinModal = ({ isOpen, onClose, onSubmit, action, processing, error }) => {
+    const [pin, setPin] = useState('');
 
-    // Kiosk Logic - Using server-side state only (no localStorage)
-    const [selectedEmployeeId, setSelectedEmployeeId] = useState(flash?.last_clocked_id || '');
-    const { data, setData, post, processing, errors } = useForm({
-        user_id: flash?.last_clocked_id || '',
-        pin: '',
-    });
-
-    // Listen to backend Flash data for last clocked employee
     useEffect(() => {
-        if (flash?.last_clocked_id) {
-            setSelectedEmployeeId(flash.last_clocked_id);
-            setData('user_id', flash.last_clocked_id);
+        if (isOpen) {
+            setPin('');
         }
-    }, [flash]);
+    }, [isOpen]);
 
-    // Helper to find status of selected user
-    const selectedEmployeeStats = employees.find(e => e.id == selectedEmployeeId);
-    const employeeStatus = selectedEmployeeStats ? selectedEmployeeStats.status : 'idle'; // idle, active, done
-
-    // Function to handle selection change
-    const handleEmployeeChange = (e) => {
-        const newId = e.target.value;
-        setSelectedEmployeeId(newId);
-        setData('user_id', newId);
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        onSubmit(pin);
     };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <div
+                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                onClick={onClose}
+            />
+
+            {/* Modal Content */}
+            <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md p-8 animate-in zoom-in-95 fade-in duration-300">
+                {/* Close Button */}
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                    <X size={20} />
+                </button>
+
+                {/* Header */}
+                <div className="text-center mb-8">
+                    <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${action === 'clockIn'
+                        ? 'bg-gradient-to-br from-green-400 to-green-500'
+                        : 'bg-gradient-to-br from-red-500 to-red-600'
+                        }`}>
+                        <Clock className="w-8 h-8 text-white" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-800">
+                        {action === 'clockIn' ? 'Clock In' : 'Clock Out'}
+                    </h2>
+                    <p className="text-gray-500 mt-2">
+                        Enter your 4-digit PIN to confirm
+                    </p>
+                </div>
+
+                {/* PIN Form */}
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div>
+                        <input
+                            type="password"
+                            inputMode="numeric"
+                            maxLength={4}
+                            pattern="[0-9]*"
+                            placeholder="••••"
+                            value={pin}
+                            onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                            autoFocus
+                            className="w-full text-center text-4xl font-mono tracking-[0.5em] py-4 px-4 rounded-2xl bg-gray-100 border-2 border-gray-200 text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 transition-all"
+                        />
+                        {error && (
+                            <div className="mt-3 text-red-500 text-sm font-medium flex items-center justify-center gap-2">
+                                <AlertCircle size={16} />
+                                {error}
+                            </div>
+                        )}
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={pin.length !== 4 || processing}
+                        className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${action === 'clockIn'
+                            ? 'bg-gradient-to-r from-green-400 to-green-500 text-white hover:from-green-500 hover:to-green-600'
+                            : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
+                            }`}
+                    >
+                        {processing ? (
+                            <span className="flex items-center justify-center gap-2">
+                                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                </svg>
+                                Processing...
+                            </span>
+                        ) : (
+                            `Confirm ${action === 'clockIn' ? 'Clock In' : 'Clock Out'}`
+                        )}
+                    </button>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const Attendance = ({ history }) => {
+    const { flash, auth } = usePage().props;
+    const user = auth?.user;
+    const employee = user?.employee;
+
+    // Get employee status from user's attendance status (passed from backend)
+    const [employeeStatus, setEmployeeStatus] = useState('idle');
+    const [processing, setProcessing] = useState(false);
+    const [errors, setErrors] = useState({});
+
+    // PIN Modal State
+    const [pinModalOpen, setPinModalOpen] = useState(false);
+    const [pendingAction, setPendingAction] = useState(null); // 'clockIn' or 'clockOut'
 
     const [currentTime, setCurrentTime] = useState(new Date());
 
@@ -40,21 +124,80 @@ const Attendance = ({ employees, history }) => {
         return () => clearInterval(timer);
     }, []);
 
-    const handleClockIn = () => {
-        if (!selectedEmployeeId) return alert('Please select your name first.');
-        post(route('staff.attendance.clockIn'), {
-            preserveState: true,
-            preserveScroll: true,
-            onFinish: () => setData('pin', ''), // Clear PIN after action
-        });
+    // Determine employee status based on today's attendance
+    useEffect(() => {
+        if (history) {
+            const records = history.data || history;
+            const todayRecord = records.find(record => {
+                const recordDate = parseISO(record.clock_in);
+                const today = new Date();
+                return record.user_id === user?.id &&
+                    recordDate.toDateString() === today.toDateString();
+            });
+
+            if (todayRecord) {
+                if (todayRecord.clock_out) {
+                    setEmployeeStatus('done');
+                } else {
+                    setEmployeeStatus('active');
+                }
+            } else {
+                setEmployeeStatus('idle');
+            }
+        }
+    }, [history, user]);
+
+    // Update status from flash messages
+    useEffect(() => {
+        if (flash?.status) {
+            setEmployeeStatus(flash.status);
+        }
+    }, [flash]);
+
+    const openPinModal = (action) => {
+        setPendingAction(action);
+        setPinModalOpen(true);
     };
 
-    const handleClockOut = () => {
-        if (!selectedEmployeeId) return alert('Please select your name first.');
-        post(route('staff.attendance.clockOut'), {
-            preserveState: true,
+    const closePinModal = () => {
+        setPinModalOpen(false);
+        setPendingAction(null);
+        setErrors({});
+    };
+
+    const handlePinSubmit = (pin) => {
+        // Capture action before async operations to avoid closure issues
+        const action = pendingAction;
+
+        const route_name = action === 'clockIn'
+            ? route('staff.attendance.clockIn')
+            : route('staff.attendance.clockOut');
+
+        setProcessing(true);
+        setErrors({});
+
+        router.post(route_name, { pin }, {
             preserveScroll: true,
-            onFinish: () => setData('pin', ''), // Clear PIN after action
+            onSuccess: () => {
+                // Close modal on success
+                setPinModalOpen(false);
+                setPendingAction(null);
+                setErrors({});
+
+                // Update status based on action taken
+                if (action === 'clockIn') {
+                    setEmployeeStatus('active');
+                } else {
+                    setEmployeeStatus('done');
+                }
+            },
+            onError: (newErrors) => {
+                setErrors(newErrors);
+                // Keep modal open to show error
+            },
+            onFinish: () => {
+                setProcessing(false);
+            },
         });
     };
 
@@ -70,41 +213,17 @@ const Attendance = ({ employees, history }) => {
         return '-';
     };
 
+    // Filter history to show only current user's records
+    const userHistory = (history?.data || history || []).filter(
+        record => record.user_id === user?.id
+    );
+
     return (
         <StaffLayout>
             <Head title="Attendance" />
 
             <div className="max-w-6xl mx-auto space-y-8 p-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-                {/* Header */}
-                <div className="flex justify-between items-center border-b border-gray-100 pb-4">
-                    <h1 className="text-2xl font-bold text-gray-800">Attendance</h1>
-                    <div className="text-gray-500">
-                        {format(currentTime, 'EEEE, MMMM do, yyyy')}
-                    </div>
-                </div>
-
-                {/* Profile Selector */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center gap-4">
-                    <User className="text-purple-500" />
-                    <div className="flex-1">
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
-                            Select Your Profile
-                        </label>
-                        <select
-                            value={selectedEmployeeId}
-                            onChange={handleEmployeeChange}
-                            className="block w-full border-none text-lg font-medium text-gray-800 focus:ring-0 p-0 cursor-pointer"
-                        >
-                            <option value="" disabled>-- Choose Name --</option>
-                            {employees.map(emp => (
-                                <option key={emp.id} value={emp.id}>
-                                    {emp.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-                </div>
 
                 {/* Pink Clock Card */}
                 <div className="bg-gradient-to-br from-pink-500 to-pink-400 rounded-3xl shadow-xl p-8 md:p-12 text-center text-white relative overflow-hidden">
@@ -144,36 +263,11 @@ const Attendance = ({ employees, history }) => {
                             )}
                         </div>
 
-                        {/* Next Assignment Display (Preserved Feature) */}
-                        {selectedEmployeeId && selectedEmployeeStats?.next_shift && (
+                        {/* Next Assignment Display */}
+                        {employee?.next_shift && (
                             <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl text-sm border border-white/10 text-pink-50 mt-2">
                                 <MapPin size={14} className="text-pink-200" />
-                                <span>Next: <strong>{selectedEmployeeStats.next_shift.location}</strong> @ {selectedEmployeeStats.next_shift.start}</span>
-                            </div>
-                        )}
-
-                        {/* PIN Input - Show for both clock-in and clock-out */}
-                        {selectedEmployeeId && (employeeStatus === 'idle' || employeeStatus === 'active') && (
-                            <div className="w-full max-w-xs">
-                                <label className="block text-pink-100 text-sm font-medium mb-2">
-                                    Enter Your 4-Digit PIN to {employeeStatus === 'idle' ? 'Clock In' : 'Clock Out'}
-                                </label>
-                                <input
-                                    type="password"
-                                    inputMode="numeric"
-                                    maxLength={4}
-                                    pattern="[0-9]*"
-                                    placeholder="••••"
-                                    value={data.pin}
-                                    onChange={e => setData('pin', e.target.value.replace(/\D/g, '').slice(0, 4))}
-                                    className="w-full text-center text-2xl font-mono tracking-[0.5em] py-3 px-4 rounded-xl bg-white/20 border border-white/30 text-white placeholder-pink-200/50 focus:outline-none focus:ring-2 focus:ring-white/50"
-                                />
-                                {errors.pin && (
-                                    <div className="mt-2 text-red-200 text-sm font-medium flex items-center justify-center gap-1">
-                                        <AlertCircle size={14} />
-                                        {errors.pin}
-                                    </div>
-                                )}
+                                <span>Next: <strong>{employee.next_shift.location}</strong> @ {employee.next_shift.start}</span>
                             </div>
                         )}
 
@@ -187,13 +281,13 @@ const Attendance = ({ employees, history }) => {
 
                         {/* Action Buttons */}
                         <div className="flex flex-wrap justify-center gap-4 mt-8 w-full max-w-md">
-                            {(!selectedEmployeeId || employeeStatus !== 'active') && (
+                            {employeeStatus !== 'active' && (
                                 <button
-                                    onClick={handleClockIn}
-                                    disabled={!selectedEmployeeId || employeeStatus !== 'idle' || processing}
+                                    onClick={() => openPinModal('clockIn')}
+                                    disabled={employeeStatus !== 'idle' || processing}
                                     className={`
                                         flex-1 flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg
-                                        ${!selectedEmployeeId || employeeStatus !== 'idle'
+                                        ${employeeStatus !== 'idle'
                                             ? 'bg-pink-600/50 text-pink-200 cursor-not-allowed opacity-70'
                                             : 'bg-white text-pink-600 hover:bg-pink-50 cursor-pointer'}
                                     `}
@@ -203,15 +297,15 @@ const Attendance = ({ employees, history }) => {
                                 </button>
                             )}
 
-                            {selectedEmployeeId && employeeStatus === 'active' && (
+                            {employeeStatus === 'active' && (
                                 <button
-                                    onClick={handleClockOut}
-                                    disabled={!selectedEmployeeId || employeeStatus !== 'active' || processing}
+                                    onClick={() => openPinModal('clockOut')}
+                                    disabled={employeeStatus !== 'active' || processing}
                                     className={`
                                         flex-1 flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg transition-all transform hover:scale-105 active:scale-95 shadow-lg border-2
-                                        ${!selectedEmployeeId || employeeStatus !== 'active'
-                                            ? 'bg-transparent border-pink-300/30 text-pink-200 cursor-not-allowed opacity-50'
-                                            : 'bg-gray-900 border-gray-900 text-white hover:bg-gray-800 cursor-pointer'}
+                                        ${employeeStatus !== 'active'
+                                            ? 'bg-transparent border-red-300/30 text-pink-200 cursor-not-allowed opacity-50'
+                                            : 'bg-red-600 border-red-600 text-white hover:bg-red-700 cursor-pointer'}
                                     `}
                                 >
                                     <Clock className="w-5 h-5" />
@@ -227,11 +321,6 @@ const Attendance = ({ employees, history }) => {
                     <div className="p-4 border-b border-gray-100 flex items-center gap-2">
                         <History className="text-orange-500" size={20} />
                         <h2 className="font-bold text-gray-800">Your Attendance History</h2>
-                        {selectedEmployeeId && employees.find(e => e.id == selectedEmployeeId) && (
-                            <span className="text-sm text-gray-500 ml-auto">
-                                Showing records for: <span className="font-medium text-gray-800">{employees.find(e => e.id == selectedEmployeeId).name}</span>
-                            </span>
-                        )}
                     </div>
 
                     <div className="overflow-x-auto">
@@ -246,42 +335,40 @@ const Attendance = ({ employees, history }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {(history.data || history).filter(record => !selectedEmployeeId || record.user_id == selectedEmployeeId).length > 0 ? (history.data || history)
-                                    .filter(record => !selectedEmployeeId || record.user_id == selectedEmployeeId)
-                                    .map((record) => (
-                                        <tr key={record.id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4 font-bold text-gray-800">
-                                                {format(parseISO(record.clock_in), 'EEE, MMM d')}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 font-medium">
-                                                {format(parseISO(record.clock_in), 'h:mm a')}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 font-medium">
-                                                {record.clock_out ? format(parseISO(record.clock_out), 'h:mm a') : '-'}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                {getHoursWorked(record)}
-                                            </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <span className={`
+                                {userHistory.length > 0 ? userHistory.map((record) => (
+                                    <tr key={record.id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4 font-bold text-gray-800">
+                                            {format(parseISO(record.clock_in), 'EEE, MMM d')}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 font-medium">
+                                            {format(parseISO(record.clock_in), 'h:mm a')}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600 font-medium">
+                                            {record.clock_out ? format(parseISO(record.clock_out), 'h:mm a') : '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-600">
+                                            {getHoursWorked(record)}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <span className={`
                                                     inline-flex px-3 py-1 rounded-full text-xs font-bold
                                                     ${!record.clock_out ? 'bg-blue-100 text-blue-700' : ''}
                                                     ${record.clock_out && record.status === 'approved' ? 'bg-green-100 text-green-700' : ''}
                                                     ${record.clock_out && record.status === 'pending' ? 'bg-orange-100 text-orange-700' : ''}
                                                     ${record.status === 'rejected' ? 'bg-red-100 text-red-700' : ''}
                                                 `}>
-                                                        {!record.clock_out ? 'Working' : (record.status === 'approved' ? 'Confirmed' : record.status)}
+                                                    {!record.clock_out ? 'Working' : (record.status === 'approved' ? 'Confirmed' : record.status)}
+                                                </span>
+                                                {!!record.is_edited && (
+                                                    <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200" title="Edited by Admin">
+                                                        EDITED
                                                     </span>
-                                                    {!!record.is_edited && (
-                                                        <span className="inline-flex px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-500 border border-gray-200" title="Edited by Admin">
-                                                            EDITED
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )) : (
+                                                )}
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )) : (
                                     <tr>
                                         <td colSpan="5" className="px-6 py-12 text-center text-gray-400">
                                             No attendance history found.
@@ -294,6 +381,16 @@ const Attendance = ({ employees, history }) => {
                 </div>
 
             </div>
+
+            {/* PIN Modal */}
+            <PinModal
+                isOpen={pinModalOpen}
+                onClose={closePinModal}
+                onSubmit={handlePinSubmit}
+                action={pendingAction}
+                processing={processing}
+                error={errors.pin || errors.message}
+            />
         </StaffLayout>
     );
 };

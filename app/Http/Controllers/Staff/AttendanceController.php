@@ -93,12 +93,11 @@ class AttendanceController extends Controller
     public function clockIn(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'pin' => 'nullable|digits:4',
         ]);
 
-        $userId = $request->user_id;
-        $user = User::find($userId);
+        $user = auth()->user();
+        $userId = $user->id;
 
         if ($user->clock_pin) {
             if (!$request->pin || $request->pin !== $user->clock_pin) {
@@ -127,23 +126,21 @@ class AttendanceController extends Controller
 
         return back()
             ->with('success', 'Clocked in successfully at ' . now()->format('h:i A'))
-            ->with('last_clocked_id', $userId);
+            ->with('status', 'active');
     }
 
     public function clockOut(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'pin' => 'nullable|digits:4',
         ]);
 
-        $userId = $request->user_id;
-        $user = User::find($userId);
+        $user = auth()->user();
+        $userId = $user->id;
 
         if ($user->clock_pin) {
             if (!$request->pin || $request->pin !== $user->clock_pin) {
-                return back()->withErrors(['pin' => 'Invalid PIN. Please try again.'])
-                    ->with('last_clocked_id', $userId);
+                return back()->withErrors(['pin' => 'Invalid PIN. Please try again.']);
             }
         }
 
@@ -154,8 +151,7 @@ class AttendanceController extends Controller
 
         if (!$record) {
             return back()
-                ->withErrors(['message' => 'No active session found.'])
-                ->with('last_clocked_id', $userId);
+                ->withErrors(['message' => 'No active session found.']);
         }
 
         $clockOut = now();
@@ -169,6 +165,6 @@ class AttendanceController extends Controller
 
         return back()
             ->with('success', 'Clocked out. Paid: ' . $hours['total_hours'] . ' hrs (OT: ' . $hours['overtime_hours'] . ')')
-            ->with('last_clocked_id', $userId);
+            ->with('status', 'done');
     }
 }

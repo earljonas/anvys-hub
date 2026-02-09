@@ -21,7 +21,7 @@ const Button = ({
         sm: "px-3 py-1.5 text-xs",
         md: "px-4 py-2 text-sm",
         lg: "px-6 py-3 text-base",
-        icon: "p-2", // For icon-only buttons
+        icon: "p-2",
     };
 
     return (

@@ -84,8 +84,7 @@ class EmployeeController extends Controller
             'clock_pin' => $validated['clock_pin'] ?? null,
             'is_admin' => false,
         ]);
-
-        // FIXED: Changed 'employeeProfile()' to 'employee()'
+        
         $user->employee()->create([
             'employee_id' => 'EMP-' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
             'job_title' => $validated['job_title'] ?? 'Staff',
