@@ -8,6 +8,14 @@ const AddPaymentModal = ({ isOpen, onClose, event, onSave }) => {
     const [notes, setNotes] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    React.useEffect(() => {
+        if (isOpen) {
+            setAmount('');
+            setNotes('');
+            setIsSubmitting(false);
+        }
+    }, [isOpen]);
+
     if (!isOpen || !event) return null;
 
     const remainingBalance = (event.totalPrice || 0) - (event.totalPaid || 0);
