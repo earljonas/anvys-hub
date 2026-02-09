@@ -7,6 +7,8 @@ use App\Models\User;
 use App\Models\Location;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 
 class EmployeeController extends Controller
@@ -60,7 +62,10 @@ class EmployeeController extends Controller
         ]);
 
         // Email Generation Logic
-        $baseEmail = strtolower($validated['first_name'] . '.' . $validated['last_name']);
+        $firstName = preg_replace('/[^a-z0-9]/', '', strtolower(Str::ascii($validated['first_name'])));
+        $lastName = preg_replace('/[^a-z0-9]/', '', strtolower(Str::ascii($validated['last_name'])));
+        $baseEmail = $firstName . '.' . $lastName;
+
         $email = $baseEmail . '@anvys.com';
         $count = 1;
         while (User::where('email', $email)->exists()) {
@@ -158,7 +163,14 @@ class EmployeeController extends Controller
         if ($user->is_admin) {
             return back()->with('error', 'Cannot delete admin accounts.');
         }
-        $user->delete();
+
+        DB::transaction(function () use ($user) {
+            if ($user->employee) {
+                $user->employee()->delete();
+            }
+            $user->delete();
+        });
+
         return back()->with('success', 'Employee archived successfully.');
     }
 

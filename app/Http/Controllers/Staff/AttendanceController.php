@@ -21,47 +21,57 @@ class AttendanceController extends Controller
 
     public function index()
     {
-        $employees = User::where('is_admin', false)
+        $employeesList = User::where('is_admin', false)
             ->select('id', 'name')
+            ->get();
+
+        $employeeIds = $employeesList->pluck('id');
+
+        // Pre-fetch today's latest records
+        $todayRecords = AttendanceRecord::whereIn('user_id', $employeeIds)
+            ->whereDate('clock_in', Carbon::today())
+            ->orderBy('clock_in', 'desc')
             ->get()
-            ->map(function ($employee) {
-                $todayRecord = AttendanceRecord::where('user_id', $employee->id)
-                    ->whereDate('clock_in', Carbon::today())
-                    ->latest()
-                    ->first();
+            ->groupBy('user_id');
 
-                $nextShift = \App\Models\Shift::where('user_id', $employee->id)
-                    ->where('end_time', '>', now())
-                    ->where('status', 'published')
-                    ->with('location')
-                    ->orderBy('start_time', 'asc')
-                    ->first();
+        // Pre-fetch next shifts
+        $nextShifts = \App\Models\Shift::whereIn('user_id', $employeeIds)
+            ->where('end_time', '>', now())
+            ->where('status', 'published')
+            ->with('location')
+            ->orderBy('start_time', 'asc')
+            ->get()
+            ->groupBy('user_id');
 
-                $status = 'idle';
-                if ($todayRecord) {
-                    if ($todayRecord->clock_out) {
-                        $status = 'done';
-                    } else {
-                        $status = 'active';
-                    }
+        $employees = $employeesList->map(function ($employee) use ($todayRecords, $nextShifts) {
+            $todayRecord = $todayRecords->get($employee->id)?->first();
+            $nextShift = $nextShifts->get($employee->id)?->first();
+
+            $status = 'idle';
+            if ($todayRecord) {
+                if ($todayRecord->clock_out) {
+                    $status = 'done';
+                } else {
+                    $status = 'active';
                 }
+            }
 
-                return [
-                    'id' => $employee->id,
-                    'name' => $employee->name,
-                    'status' => $status,
-                    'next_shift' => $nextShift ? [
-                        'location' => $nextShift->location?->name ?? 'Unknown',
-                        'start' => $nextShift->start_time->setTimezone('Asia/Manila')->format('M d, h:i A'),
-                    ] : null,
-                ];
-            });
+            return [
+                'id' => $employee->id,
+                'name' => $employee->name,
+                'status' => $status,
+                'next_shift' => $nextShift ? [
+                    'location' => $nextShift->location?->name ?? 'Unknown',
+                    'start' => $nextShift->start_time->setTimezone('Asia/Manila')->format('M d, h:i A'),
+                ] : null,
+            ];
+        });
 
         $history = AttendanceRecord::with('user')
             ->where('clock_in', '>=', now()->subDays(30))
             ->orderBy('clock_in', 'desc')
-            ->get()
-            ->map(function ($record) {
+            ->paginate(50)
+            ->through(function ($record) {
                 return [
                     'id' => $record->id,
                     'user_id' => $record->user_id,
@@ -98,6 +108,7 @@ class AttendanceController extends Controller
 
         $todayRecord = AttendanceRecord::where('user_id', $userId)
             ->whereDate('clock_in', Carbon::today())
+            ->latest()
             ->first();
 
         if ($todayRecord) {

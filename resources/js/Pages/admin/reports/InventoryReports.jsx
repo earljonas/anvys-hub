@@ -100,7 +100,7 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-red-600">
                         <AlertTriangle size={20} /> Low Stock Alerts
                     </h3>
-                    {lowStockItems.data && lowStockItems.data.length > 0 ? (
+                    {(lowStockItems.data || lowStockItems) && (lowStockItems.data || lowStockItems).length > 0 ? (
                         <>
                             <div className="overflow-x-auto flex-grow">
                                 <table className="w-full text-sm">
@@ -113,7 +113,7 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {lowStockItems.data.map((item) => (
+                                        {(lowStockItems.data || lowStockItems).map((item) => (
                                             <tr key={item.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                                                 <td className="py-3 px-2 font-medium text-[hsl(var(--foreground))]">{item.name}</td>
                                                 <td className="py-3 px-2 text-[hsl(var(--muted-foreground))]">{item.location}</td>
@@ -150,7 +150,7 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                     <h3 className="text-lg font-bold text-[hsl(var(--foreground))] mb-4 flex items-center gap-2">
                         <History size={20} /> Recent Stock Activity
                     </h3>
-                    {stockLogs.data && stockLogs.data.length > 0 ? (
+                    {(stockLogs.data || stockLogs) && (stockLogs.data || stockLogs).length > 0 ? (
                         <>
                             <div className="overflow-x-auto flex-grow">
                                 <table className="w-full text-sm">
@@ -163,7 +163,7 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {stockLogs.data.map((log) => (
+                                        {(stockLogs.data || stockLogs).map((log) => (
                                             <tr key={log.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                                                 <td className="py-3 px-2">
                                                     <div className="font-medium text-[hsl(var(--foreground))]">

@@ -246,7 +246,7 @@ const Attendance = ({ employees, history }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
-                                {history.filter(record => !selectedEmployeeId || record.user_id == selectedEmployeeId).length > 0 ? history
+                                {(history.data || history).filter(record => !selectedEmployeeId || record.user_id == selectedEmployeeId).length > 0 ? (history.data || history)
                                     .filter(record => !selectedEmployeeId || record.user_id == selectedEmployeeId)
                                     .map((record) => (
                                         <tr key={record.id} className="hover:bg-gray-50/50 transition-colors">

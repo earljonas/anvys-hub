@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, useForm, router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X } from 'lucide-react';
@@ -12,54 +13,75 @@ import Select from '@/Components/employees/Select';
 // Action Menu Component (burger menu)
 const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
     const [isOpen, setIsOpen] = useState(false);
-    const [menuPosition, setMenuPosition] = useState('bottom');
-    const menuRef = useRef(null);
-    const buttonRef = useRef(null);
-
-    useEffect(() => {
-        if (isOpen && buttonRef.current) {
-            const rect = buttonRef.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            // If less than 200px below, open upwards
-            if (spaceBelow < 200) {
-                setMenuPosition('top');
-            } else {
-                setMenuPosition('bottom');
-            }
-        }
-    }, [isOpen]);
+    const [position, setPosition] = useState({ top: 0, left: 0 });
+    const triggerRef = useRef(null);
+    const dropdownRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (menuRef.current && !menuRef.current.contains(event.target)) {
+            if (
+                dropdownRef.current &&
+                !dropdownRef.current.contains(event.target) &&
+                triggerRef.current &&
+                !triggerRef.current.contains(event.target)
+            ) {
                 setIsOpen(false);
+            }
+        };
+
+        const handleScroll = () => {
+            if (isOpen && triggerRef.current) {
+                const rect = triggerRef.current.getBoundingClientRect();
+                setPosition({
+                    top: rect.bottom + window.scrollY + 5,
+                    left: rect.right - 128 + window.scrollX
+                });
             }
         };
 
         if (isOpen) {
             document.addEventListener('mousedown', handleClickOutside);
+            window.addEventListener('scroll', handleScroll, true);
         }
 
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
+            window.removeEventListener('scroll', handleScroll, true);
         };
     }, [isOpen]);
 
+    const toggleMenu = (e) => {
+        e.stopPropagation();
+        if (!isOpen) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            setPosition({
+                top: rect.bottom + window.scrollY + 5,
+                left: rect.right - 128 + window.scrollX
+            });
+        }
+        setIsOpen(!isOpen);
+    };
+
     return (
-        <div className="relative" ref={menuRef}>
+        <div className="relative">
             <button
-                ref={buttonRef}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setIsOpen(!isOpen);
-                }}
+                ref={triggerRef}
+                onClick={toggleMenu}
                 className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
             >
                 <MoreVertical size={16} />
             </button>
 
-            {isOpen && (
-                <div className={`absolute right-0 w-32 bg-white rounded-lg shadow-lg border border-[hsl(var(--border))] z-50 py-1 ${menuPosition === 'top' ? 'bottom-full mb-1' : 'mt-1'}`}>
+            {isOpen && createPortal(
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        top: `${position.top}px`,
+                        left: `${position.left}px`,
+                        position: 'absolute'
+                    }}
+                    className="w-32 bg-[hsl(var(--card))] rounded-lg shadow-lg border border-[hsl(var(--border))] z-[9999] py-1"
+                >
                     {!employee.deleted_at && (
                         <>
                             <button
@@ -86,7 +108,13 @@ const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
                             </button>
                         </>
                     )}
-                </div>
+                    {employee.deleted_at && (
+                        <div className="px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] italic">
+                            Archived
+                        </div>
+                    )}
+                </div>,
+                document.body
             )}
         </div>
     );
@@ -528,7 +556,7 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan="6" className="px-6 py-12 text-center text-[hsl(var(--muted-foreground))]">
+                                    <td colSpan="5" className="px-6 py-12 text-center text-[hsl(var(--muted-foreground))]">
                                         No employees found.
                                     </td>
                                 </tr>

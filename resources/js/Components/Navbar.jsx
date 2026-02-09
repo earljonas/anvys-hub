@@ -39,7 +39,7 @@ const Navbar = () => {
     };
 
     return (
-        <nav className="h-20 border-b border-[hsl(var(--border))] bg-white/80 backdrop-blur-sm px-6 flex items-center justify-between sticky top-0 z-50">
+        <nav className="h-20 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))]/80 backdrop-blur-sm px-6 flex items-center justify-between sticky top-0 z-50">
 
             <div className="flex items-center gap-4">
                 <div className="flex items-center gap-3">
