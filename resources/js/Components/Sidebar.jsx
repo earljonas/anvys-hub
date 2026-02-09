@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, usePage, router } from '@inertiajs/react'
 import {
     LayoutDashboard,
@@ -7,7 +7,6 @@ import {
     Users,
     Calendar,
     FileText,
-    Settings,
     LogOut,
     PanelLeft,
     ChevronRight,
@@ -16,14 +15,36 @@ import {
 const Sidebar = () => {
     const { url } = usePage()
     const [isCollapsed, setIsCollapsed] = useState(false)
+
+    // Accordion states
     const [employeesOpen, setEmployeesOpen] = useState(false)
     const [reportsOpen, setReportsOpen] = useState(false)
+
+    // Hover Menu states
+    const [hoveredMenu, setHoveredMenu] = useState(null)
+    const [menuTop, setMenuTop] = useState(0)
+
+    const closeTimeoutRef = useRef(null)
 
     const navItems = [
         { name: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
         { name: 'Inventory', icon: Package, path: '/admin/inventory' },
         { name: 'Locations', icon: MapPin, path: '/admin/locations' },
         { name: 'Events', icon: Calendar, path: '/admin/events' },
+    ]
+
+    const employeeSubItems = [
+        { name: 'Directory', path: '/admin/employees' },
+        { name: 'Schedule', path: '/admin/schedule' },
+        { name: 'Attendance', path: '/admin/attendance' },
+        { name: 'Payroll', path: '/admin/payroll' },
+    ]
+
+    const reportSubItems = [
+        { name: 'Sales', path: '/admin/reports/sales' },
+        { name: 'Inventory', path: '/admin/reports/inventory' },
+        { name: 'Events', path: '/admin/reports/events' },
+        { name: 'Payroll', path: '/admin/reports/payroll' },
     ]
 
     const employeePaths = ['/admin/employees', '/admin/schedule', '/admin/attendance', '/admin/payroll']
@@ -45,16 +66,47 @@ const Sidebar = () => {
         router.post('/logout')
     }
 
+    // --- HOVER LOGIC ---
+    const handleMouseEnter = (e, menuName) => {
+        if (!isCollapsed) return;
+
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+
+        const rect = e.currentTarget.getBoundingClientRect();
+        setMenuTop(rect.top);
+        setHoveredMenu(menuName);
+    }
+
+    const handleMouseLeave = () => {
+        if (!isCollapsed) return;
+
+        // 50ms delay is imperceptible (feels immediate) but ensures 
+        // the mouse can cross the gap between button and menu.
+        closeTimeoutRef.current = setTimeout(() => {
+            setHoveredMenu(null);
+        }, 50);
+    }
+
+    const handleMenuEnter = () => {
+        if (closeTimeoutRef.current) {
+            clearTimeout(closeTimeoutRef.current);
+            closeTimeoutRef.current = null;
+        }
+    }
+
     return (
         <div
             className={`flex flex-col h-screen sidebar-gradient
             text-[hsl(var(--sidebar-foreground))]
             border-r border-[hsl(var(--sidebar-border))]
-            sticky top-0 shrink-0
+            sticky top-0 shrink-0 z-50
             transition-[width] duration-300 ease-in-out
             ${isCollapsed ? 'w-20' : 'w-64'}`}
         >
-            {/* header */}
+            {/* Header */}
             <div
                 className={`flex items-center h-16 px-4 mt-3 mb-3
                 border-b border-[hsl(var(--sidebar-border))]
@@ -77,9 +129,8 @@ const Sidebar = () => {
                 </button>
             </div>
 
-            {/* navigation */}
-            <nav className="flex-1 px-3 space-y-2 overflow-y-auto mt-2">
-                {/* Regular nav items */}
+            {/* Navigation */}
+            <nav className="flex-1 px-3 space-y-2 overflow-y-auto mt-2 custom-scrollbar">
                 {navItems.map(item => {
                     const active = isActive(item.path)
                     return (
@@ -93,7 +144,7 @@ const Sidebar = () => {
                                 hover:translate-x-0.5 active:scale-[0.98]
                                 ${active
                                     ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
-                                    : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
+                                    : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-pink-50 hover:text-pink-600'
                                 }
                             `}
                         >
@@ -108,19 +159,22 @@ const Sidebar = () => {
                     )
                 })}
 
-                {/* Employees Dropdown */}
-                <div>
+                {/* Employees Group */}
+                <div
+                    className="relative"
+                    onMouseEnter={(e) => handleMouseEnter(e, 'employees')}
+                    onMouseLeave={handleMouseLeave}
+                >
                     <button
-                        onClick={() => setEmployeesOpen(!employeesOpen)}
-                        className={`flex items-center cursor-pointer
-                            w-full
+                        onClick={() => !isCollapsed && setEmployeesOpen(!employeesOpen)}
+                        className={`flex items-center cursor-pointer w-full
                             ${isCollapsed ? 'justify-center gap-0' : 'justify-between gap-3'}
                             px-3 py-2.5 rounded-lg
                             transition-all duration-200 ease-out
                             hover:translate-x-0.5 active:scale-[0.98]
                             ${isEmployeesActive
                                 ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
-                                : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
+                                : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-pink-50 hover:text-pink-600'
                             }
                         `}
                     >
@@ -140,50 +194,34 @@ const Sidebar = () => {
                         )}
                     </button>
 
-                    <div
-                        className={`ml-9 mt-1 space-y-1 overflow-hidden
-                        transition-all duration-300 ease-in-out
-                        ${employeesOpen && !isCollapsed
-                                ? 'max-h-40 opacity-100'
-                                : 'max-h-0 opacity-0'
-                            }`}
-                    >
-                        {[
-                            { name: 'Employees', path: '/admin/employees' },
-                            { name: 'Schedule', path: '/admin/schedule' },
-                            { name: 'Attendance', path: '/admin/attendance' },
-                            { name: 'Payroll', path: '/admin/payroll' },
-                        ].map(sub => (
-                            <Link
-                                key={sub.name}
-                                href={sub.path}
-                                className={`block px-3 py-2 rounded-md text-sm cursor-pointer
-                                    transition-all duration-200
-                                    ${url.startsWith(sub.path)
-                                        ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10'
-                                        : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
-                                    }
-                                `}
-                            >
+                    {/* Regular Dropdown (Expanded) */}
+                    <div className={`ml-9 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
+                        ${employeesOpen && !isCollapsed ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        {employeeSubItems.map(sub => (
+                            <Link key={sub.name} href={sub.path} className={`block px-3 py-2 rounded-md text-sm cursor-pointer transition-all duration-200
+                                ${url.startsWith(sub.path) ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10' : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'}`}>
                                 {sub.name}
                             </Link>
                         ))}
                     </div>
                 </div>
 
-                {/* Reports Dropdown */}
-                <div>
+                {/* Reports Group */}
+                <div
+                    className="relative"
+                    onMouseEnter={(e) => handleMouseEnter(e, 'reports')}
+                    onMouseLeave={handleMouseLeave}
+                >
                     <button
-                        onClick={() => setReportsOpen(!reportsOpen)}
-                        className={`flex items-center cursor-pointer
-                            w-full
+                        onClick={() => !isCollapsed && setReportsOpen(!reportsOpen)}
+                        className={`flex items-center cursor-pointer w-full
                             ${isCollapsed ? 'justify-center gap-0' : 'justify-between gap-3'}
                             px-3 py-2.5 rounded-lg
                             transition-all duration-200 ease-out
                             hover:translate-x-0.5 active:scale-[0.98]
                             ${isReportsActive
                                 ? 'bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]'
-                                : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
+                                : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-pink-50 hover:text-pink-600'
                             }
                         `}
                     >
@@ -203,31 +241,12 @@ const Sidebar = () => {
                         )}
                     </button>
 
-                    <div
-                        className={`ml-9 mt-1 space-y-1 overflow-hidden
-                        transition-all duration-300 ease-in-out
-                        ${reportsOpen && !isCollapsed
-                                ? 'max-h-48 opacity-100'
-                                : 'max-h-0 opacity-0'
-                            }`}
-                    >
-                        {[
-                            { name: 'Sales', path: '/admin/reports/sales' },
-                            { name: 'Inventory', path: '/admin/reports/inventory' },
-                            { name: 'Events', path: '/admin/reports/events' },
-                            { name: 'Payroll', path: '/admin/reports/payroll' },
-                        ].map(sub => (
-                            <Link
-                                key={sub.name}
-                                href={sub.path}
-                                className={`block px-3 py-2 rounded-md text-sm
-                                    transition-all duration-200
-                                    ${url.startsWith(sub.path)
-                                        ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10'
-                                        : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'
-                                    }
-                                `}
-                            >
+                    {/* Regular Dropdown (Expanded) */}
+                    <div className={`ml-9 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
+                        ${reportsOpen && !isCollapsed ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        {reportSubItems.map(sub => (
+                            <Link key={sub.name} href={sub.path} className={`block px-3 py-2 rounded-md text-sm transition-all duration-200
+                                ${url.startsWith(sub.path) ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10' : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'}`}>
                                 {sub.name}
                             </Link>
                         ))}
@@ -235,7 +254,7 @@ const Sidebar = () => {
                 </div>
             </nav>
 
-            {/* bottom */}
+            {/* Bottom */}
             <div className="p-3 border-t border-[hsl(var(--sidebar-border))] space-y-2">
                 <button
                     onClick={handleLogout}
@@ -254,6 +273,39 @@ const Sidebar = () => {
                     </span>
                 </button>
             </div>
+
+            {/* GLOBAL HOVER MENU */}
+            {isCollapsed && hoveredMenu && (
+                <div
+                    className="fixed left-20 z-[9999]"
+                    style={{ top: menuTop - 10 }}
+                    onMouseEnter={handleMenuEnter}
+                    onMouseLeave={handleMouseLeave}
+                >
+                    <div className="bg-white border border-[hsl(var(--border))] rounded-lg shadow-xl p-2 min-w-[180px] relative animate-in fade-in-0 zoom-in-95 duration-200">
+                        {/* Arrow */}
+                        <div className="absolute left-[-6px] top-5 w-3 h-3 bg-white border-l border-b border-[hsl(var(--border))] rotate-45 transform"></div>
+
+                        {/* Content */}
+                        <div className="space-y-1 relative z-10 bg-white">
+                            {(hoveredMenu === 'employees' ? employeeSubItems : reportSubItems).map(sub => (
+                                <Link
+                                    key={sub.name}
+                                    href={sub.path}
+                                    className={`block px-3 py-2 text-sm rounded-md transition-colors duration-150
+                                        ${url.startsWith(sub.path)
+                                            ? 'text-pink-600 font-medium bg-pink-50'
+                                            : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]'
+                                        }
+                                    `}
+                                >
+                                    {sub.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     )
 }
