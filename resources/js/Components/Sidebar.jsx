@@ -16,6 +16,9 @@ const Sidebar = () => {
     const { url } = usePage()
     const [isCollapsed, setIsCollapsed] = useState(false)
 
+    // Shared constant for dropdown height to prevent clipping
+    const dropdownMaxHeight = "max-h-60"
+
     // Accordion states
     const [employeesOpen, setEmployeesOpen] = useState(false)
     const [reportsOpen, setReportsOpen] = useState(false)
@@ -47,8 +50,8 @@ const Sidebar = () => {
         { name: 'Payroll', path: '/admin/reports/payroll' },
     ]
 
-    const employeePaths = ['/admin/employees', '/admin/schedule', '/admin/attendance', '/admin/payroll']
-    const reportPaths = ['/admin/reports/sales', '/admin/reports/inventory', '/admin/reports/events', '/admin/reports/payroll']
+    const employeePaths = employeeSubItems.map(item => item.path)
+    const reportPaths = reportSubItems.map(item => item.path)
 
     const isEmployeesActive = employeePaths.some(path => url.startsWith(path))
     const isReportsActive = reportPaths.some(path => url.startsWith(path))
@@ -83,8 +86,6 @@ const Sidebar = () => {
     const handleMouseLeave = () => {
         if (!isCollapsed) return;
 
-        // 50ms delay is imperceptible (feels immediate) but ensures 
-        // the mouse can cross the gap between button and menu.
         closeTimeoutRef.current = setTimeout(() => {
             setHoveredMenu(null);
         }, 50);
@@ -194,9 +195,9 @@ const Sidebar = () => {
                         )}
                     </button>
 
-                    {/* Regular Dropdown (Expanded) */}
+                    {/* Unified Employees Dropdown */}
                     <div className={`ml-9 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
-                        ${employeesOpen && !isCollapsed ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        ${employeesOpen && !isCollapsed ? `${dropdownMaxHeight} opacity-100` : 'max-h-0 opacity-0'}`}>
                         {employeeSubItems.map(sub => (
                             <Link key={sub.name} href={sub.path} className={`block px-3 py-2 rounded-md text-sm cursor-pointer transition-all duration-200
                                 ${url.startsWith(sub.path) ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10' : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'}`}>
@@ -241,9 +242,9 @@ const Sidebar = () => {
                         )}
                     </button>
 
-                    {/* Regular Dropdown (Expanded) */}
+                    {/* Unified Reports Dropdown */}
                     <div className={`ml-9 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
-                        ${reportsOpen && !isCollapsed ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'}`}>
+                        ${reportsOpen && !isCollapsed ? `${dropdownMaxHeight} opacity-100` : 'max-h-0 opacity-0'}`}>
                         {reportSubItems.map(sub => (
                             <Link key={sub.name} href={sub.path} className={`block px-3 py-2 rounded-md text-sm transition-all duration-200
                                 ${url.startsWith(sub.path) ? 'text-[hsl(var(--sidebar-primary))] font-medium bg-[hsl(var(--sidebar-primary))]/10' : 'text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-accent))]'}`}>
