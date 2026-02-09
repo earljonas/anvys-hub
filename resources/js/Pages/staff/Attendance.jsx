@@ -124,19 +124,47 @@ const Attendance = ({ history }) => {
         return () => clearInterval(timer);
     }, []);
 
-    // Determine employee status based on today's attendance
+    // Safe date formatter helpers
+    const formatDateSafely = (dateString, formatStr) => {
+        if (!dateString) return '-';
+        try {
+            return format(parseISO(dateString), formatStr);
+        } catch {
+            return '-';
+        }
+    };
+
+    const formatTimeSafely = (dateString, formatStr) => {
+        if (!dateString) return '-';
+        try {
+            return format(parseISO(dateString), formatStr);
+        } catch {
+            return '-';
+        }
+    };
+
+    // Determine employee status based on today's latest attendance record
     useEffect(() => {
         if (history) {
             const records = history.data || history;
-            const todayRecord = records.find(record => {
-                const recordDate = parseISO(record.clock_in);
-                const today = new Date();
-                return record.user_id === user?.id &&
-                    recordDate.toDateString() === today.toDateString();
+            const today = new Date();
+
+            // Filter records for today and find the latest one
+            const todayRecords = records.filter(record => {
+                if (!record.clock_in) return false;
+                try {
+                    const recordDate = parseISO(record.clock_in);
+                    return recordDate.toDateString() === today.toDateString();
+                } catch {
+                    return false;
+                }
             });
 
-            if (todayRecord) {
-                if (todayRecord.clock_out) {
+            // Get the latest record (records are already sorted by clock_in desc from backend)
+            const latestTodayRecord = todayRecords.length > 0 ? todayRecords[0] : null;
+
+            if (latestTodayRecord) {
+                if (latestTodayRecord.clock_out) {
                     setEmployeeStatus('done');
                 } else {
                     setEmployeeStatus('active');
@@ -145,7 +173,7 @@ const Attendance = ({ history }) => {
                 setEmployeeStatus('idle');
             }
         }
-    }, [history, user]);
+    }, [history]);
 
     // Update status from flash messages
     useEffect(() => {
@@ -213,10 +241,8 @@ const Attendance = ({ history }) => {
         return '-';
     };
 
-    // Filter history to show only current user's records
-    const userHistory = (history?.data || history || []).filter(
-        record => record.user_id === user?.id
-    );
+    // History is already scoped to current user from the backend
+    const userHistory = history?.data || history || [];
 
     return (
         <StaffLayout>
@@ -338,13 +364,13 @@ const Attendance = ({ history }) => {
                                 {userHistory.length > 0 ? userHistory.map((record) => (
                                     <tr key={record.id} className="hover:bg-gray-50/50 transition-colors">
                                         <td className="px-6 py-4 font-bold text-gray-800">
-                                            {format(parseISO(record.clock_in), 'EEE, MMM d')}
+                                            {formatDateSafely(record.clock_in, 'EEE, MMM d')}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 font-medium">
-                                            {format(parseISO(record.clock_in), 'h:mm a')}
+                                            {formatTimeSafely(record.clock_in, 'h:mm a')}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600 font-medium">
-                                            {record.clock_out ? format(parseISO(record.clock_out), 'h:mm a') : '-'}
+                                            {record.clock_out ? formatTimeSafely(record.clock_out, 'h:mm a') : '-'}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
                                             {getHoursWorked(record)}

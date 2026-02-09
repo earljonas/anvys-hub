@@ -306,8 +306,8 @@ class ReportsController extends Controller
             ->whereIn('status', ['Pending', 'draft', 'Draft'])
             ->count();
 
-        // 5. Total Employees on Payroll
-        $totalEmployeesOnPayroll = User::where('is_admin', false)->count();
+        // 5. Total Non-Admin Employees (headcount)
+        $totalNonAdminEmployees = User::where('is_admin', false)->count();
 
         // 6. Total Hours Worked (YTD)
         $totalHoursWorked = DB::table('payslips')
@@ -363,7 +363,7 @@ class ReportsController extends Controller
                 'averageNetPay' => (float) ($averageNetPay ?? 0),
                 'totalDeductionsYTD' => (float) ($totalDeductionsYTD ?? 0),
                 'pendingPayrolls' => $pendingPayrolls,
-                'totalEmployeesOnPayroll' => $totalEmployeesOnPayroll,
+                'totalNonAdminEmployees' => $totalNonAdminEmployees,
                 'totalHoursWorked' => (float) ($totalHoursWorked ?? 0),
             ],
             'monthlyPayrollCost' => $monthlyPayrollCost,

@@ -68,6 +68,7 @@ class AttendanceController extends Controller
         });
 
         $history = AttendanceRecord::with('user')
+            ->where('user_id', auth()->id())
             ->where('clock_in', '>=', now()->subDays(30))
             ->orderBy('clock_in', 'desc')
             ->paginate(50)

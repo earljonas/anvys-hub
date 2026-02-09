@@ -93,7 +93,7 @@ const Navbar = () => {
             </div>
 
             {/* Center Section - Navigation Links */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-10">
                 <Link
                     href="/staff/attendance"
                     className={getLinkClasses('/staff/attendance')}
@@ -129,17 +129,6 @@ const Navbar = () => {
 
             {/* Right Section - Theme Toggle, Location, Profile */}
             <div className="flex items-center gap-4">
-
-                {/* Theme Toggle */}
-                <button
-                    onClick={toggleTheme}
-                    className="p-2.5 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-all"
-                    title="Toggle theme"
-                >
-                    <span className="dark:hidden"><Sun size={20} /></span>
-                    <span className="hidden dark:inline"><Moon size={20} /></span>
-                </button>
-
                 {/* Location Badge */}
                 {location && (
                     <div className="flex items-center gap-2 px-3 py-1.5 bg-[hsl(var(--muted))]/50 rounded-full border border-[hsl(var(--border))]">
@@ -196,43 +185,13 @@ const Navbar = () => {
                                             <span className="font-bold text-[hsl(var(--foreground))]">
                                                 {user.name || 'Staff Member'}
                                             </span>
-                                            <span className="text-xs text-[hsl(var(--muted-foreground))]">
-                                                {user.email || 'staff@anvyshub.com'}
-                                            </span>
+                                            {user.email && (
+                                                <span className="text-xs text-[hsl(var(--muted-foreground))]">
+                                                    {user.email}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
-                                    {location && (
-                                        <div className="mt-3 flex items-center gap-2 px-3 py-2 bg-[hsl(var(--background))] rounded-lg">
-                                            <MapPin size={14} className="text-[hsl(var(--primary))]" />
-                                            <span className="text-sm text-[hsl(var(--foreground))]">
-                                                {location.name}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Menu Items */}
-                                <div className="p-2">
-                                    <button
-                                        onClick={toggleTheme}
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors text-left"
-                                    >
-                                        <span className="dark:hidden"><Sun size={18} /></span>
-                                        <span className="hidden dark:inline"><Moon size={18} /></span>
-                                        <span className="text-sm font-medium">
-                                            <span className="dark:hidden">Switch to Dark Mode</span>
-                                            <span className="hidden dark:inline">Switch to Light Mode</span>
-                                        </span>
-                                    </button>
-
-                                    <Link
-                                        href="/staff/help"
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors"
-                                        onClick={() => setProfileDropdownOpen(false)}
-                                    >
-                                        <HelpCircle size={18} />
-                                        <span className="text-sm font-medium">Help & Support</span>
-                                    </Link>
                                 </div>
 
                                 {/* Logout Section */}
@@ -241,7 +200,7 @@ const Navbar = () => {
                                         href="/logout"
                                         method="post"
                                         as="button"
-                                        className="w-full flex items-center gap-3 px-3 py-2.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors text-left"
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 cursor-pointer text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-colors text-left"
                                         onClick={() => setProfileDropdownOpen(false)}
                                     >
                                         <LogOut size={18} />
