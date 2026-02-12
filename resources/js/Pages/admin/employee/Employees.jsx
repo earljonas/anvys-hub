@@ -67,7 +67,7 @@ const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
             <button
                 ref={triggerRef}
                 onClick={toggleMenu}
-                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
             >
                 <MoreVertical size={16} />
             </button>

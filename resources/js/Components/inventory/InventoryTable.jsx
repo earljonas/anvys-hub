@@ -82,7 +82,7 @@ const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
             <button
                 ref={triggerRef}
                 onClick={toggleMenu}
-                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
             >
                 <MoreVertical size={16} />
             </button>
@@ -103,7 +103,7 @@ const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
                             onAdjustStock(item);
                             setIsOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2 cursor-pointer"
                     >
                         <ArrowUpDown size={14} />
                         Adjust
@@ -114,7 +114,7 @@ const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
                             onEdit(item);
                             setIsOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2 cursor-pointer"
                     >
                         <Edit2 size={14} />
                         Edit
@@ -125,7 +125,7 @@ const ActionMenu = ({ item, onAdjustStock, onEdit, onDelete }) => {
                             onDelete(item.id);
                             setIsOpen(false);
                         }}
-                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                     >
                         <Archive size={14} />
                         Archive

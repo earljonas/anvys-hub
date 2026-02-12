@@ -25,6 +25,12 @@ class Location extends Model
 
     public function getStaffCountAttribute()
     {
-        return $this->employees()->where('status', 'Active')->count();
+        return $this->employees()
+            ->where('status', 'Active')
+            ->whereHas('user', function ($q) {
+                $q->whereNull('deleted_at')
+                  ->where('is_admin', false);
+            })
+            ->count();
     }
 }

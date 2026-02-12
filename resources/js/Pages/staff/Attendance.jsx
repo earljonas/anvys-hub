@@ -42,7 +42,7 @@ const PinModal = ({ isOpen, onClose, onSubmit, action, processing, error }) => {
                 {/* Header */}
                 <div className="text-center mb-8">
                     <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 ${action === 'clockIn'
-                        ? 'bg-gradient-to-br from-green-400 to-green-500'
+                        ? 'bg-gradient-to-br from-pink-500 to-pink-600'
                         : 'bg-gradient-to-br from-red-500 to-red-600'
                         }`}>
                         <Clock className="w-8 h-8 text-white" />
@@ -81,7 +81,7 @@ const PinModal = ({ isOpen, onClose, onSubmit, action, processing, error }) => {
                         type="submit"
                         disabled={pin.length !== 4 || processing}
                         className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ${action === 'clockIn'
-                            ? 'bg-gradient-to-r from-green-400 to-green-500 text-white hover:from-green-500 hover:to-green-600'
+                            ? 'bg-gradient-to-r from-pink-500 to-pink-600 text-white hover:from-pink-600 hover:to-pink-700'
                             : 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700'
                             }`}
                     >

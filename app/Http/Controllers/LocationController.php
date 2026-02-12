@@ -10,9 +10,13 @@ class LocationController extends Controller
 {
     public function index()
     {
-        $locations = Location::withCount([
+        $locations = Location::withTrashed()->withCount([
             'employees' => function ($query) {
-                $query->where('status', 'Active');
+                $query->where('status', 'Active')
+                      ->whereHas('user', function ($q) {
+                          $q->whereNull('deleted_at')
+                            ->where('is_admin', false);
+                      });
             }
         ])->get()->map(function ($location) {
             return [

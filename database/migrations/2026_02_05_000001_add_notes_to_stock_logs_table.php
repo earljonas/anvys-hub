@@ -10,9 +10,11 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::table('stock_logs', function (Blueprint $table) {
-            $table->text('notes')->nullable()->after('quantity');
-        });
+        if (!Schema::hasColumn('stock_logs', 'notes')) {
+            Schema::table('stock_logs', function (Blueprint $table) {
+                $table->text('notes')->nullable()->after('quantity');
+            });
+        }
     }
 
     /**

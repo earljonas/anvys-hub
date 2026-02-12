@@ -56,7 +56,7 @@ const StaffInventoryTable = ({ items, currentPage, totalPages, onPageChange, onA
                                         <div className="flex justify-end gap-2">
                                             <button
                                                 onClick={() => onAdjustStock(item)}
-                                                className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--primary))] text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium"
+                                                className="flex items-center gap-2 px-3 py-2 bg-[hsl(var(--primary))] text-white rounded-lg hover:opacity-90 transition-colors text-sm font-medium cursor-pointer"
                                             >
                                                 <ArrowUpDown size={16} />
                                                 Adjust Stock

@@ -61,7 +61,7 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart, 
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                        className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
                     >
                         <X size={20} />
                     </button>
@@ -80,7 +80,7 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart, 
                                         key={s.name}
                                         onClick={() => setSize(s)}
                                         className={`
-                                            px-4 py-3 rounded-lg border text-left transition-all
+                                            px-4 py-3 rounded-lg border text-left transition-all cursor-pointer
                                             ${size?.name === s.name
                                                 ? 'border-[hsl(var(--primary))] bg-pink-50 ring-1 ring-[hsl(var(--primary))]'
                                                 : 'border-[hsl(var(--border))] hover:bg-slate-50'}
@@ -113,7 +113,7 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart, 
                                             <button
                                                 onClick={() => updateAddon(addon.name, -1)}
                                                 disabled={!addons[addon.name]}
-                                                className="w-8 h-8 rounded flex items-center justify-center border hover:bg-slate-100 disabled:opacity-50"
+                                                className="w-8 h-8 rounded flex items-center justify-center border hover:bg-slate-100 disabled:opacity-50 cursor-pointer"
                                             >
                                                 <Minus size={14} />
                                             </button>
@@ -122,7 +122,7 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart, 
                                             </span>
                                             <button
                                                 onClick={() => updateAddon(addon.name, 1)}
-                                                className="w-8 h-8 rounded flex items-center justify-center border bg-slate-50 hover:bg-slate-100"
+                                                className="w-8 h-8 rounded flex items-center justify-center border bg-slate-50 hover:bg-slate-100 cursor-pointer"
                                             >
                                                 <Plus size={14} />
                                             </button>
@@ -141,10 +141,10 @@ export default function CustomizeModal({ product, isOpen, onClose, onAddToCart, 
                         <span className="text-2xl font-black text-[hsl(var(--primary))]">₱{finalPrice.toFixed(2)}</span>
                     </div>
                     <div className="flex gap-3">
-                        <Button variant="ghost" onClick={onClose}>
+                        <Button variant="ghost" onClick={onClose} className="cursor-pointer">
                             Cancel
                         </Button>
-                        <Button variant="primary" onClick={handleSave}>
+                        <Button variant="primary" onClick={handleSave} className="cursor-pointer">
                             {initialData ? 'Update Order' : 'Add to Cart'}
                         </Button>
                     </div>

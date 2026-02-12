@@ -10,9 +10,11 @@ return new class extends Migration {
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->softDeletes(); // This adds the 'deleted_at' column
-        });
+        if (!Schema::hasColumn('users', 'deleted_at')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->softDeletes(); // This adds the 'deleted_at' column
+            });
+        }
     }
 
     public function down()
