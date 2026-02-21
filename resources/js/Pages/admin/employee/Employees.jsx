@@ -470,8 +470,8 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                             value={statusFilter}
                             onChange={handleStatusFilter}
                         >
-                            <option value="Active">Active Employees</option>
-                            <option value="Archived">Archived Employees</option>
+                            <option value="Active">Active</option>
+                            <option value="Archived">Archived</option>
                         </select>
                     </div>
                 </div>

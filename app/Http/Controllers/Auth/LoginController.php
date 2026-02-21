@@ -24,6 +24,8 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->remember)) {
             $request->session()->regenerate();
 
+            \Illuminate\Support\Facades\Log::info('Login successful: ' . Auth::user()->email . ' | Is Admin: ' . (Auth::user()->is_admin ? 'YES' : 'NO'));
+
             return Auth::user()->is_admin
                 ? redirect()->intended('/admin/dashboard')
                 : redirect()->intended('/staff/attendance');

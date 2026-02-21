@@ -147,7 +147,7 @@ const Navbar = () => {
                     <div className="relative" ref={dropdownRef}>
                         <button
                             onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                            className="flex items-center gap-3 px-3 py-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-all"
+                            className="flex items-center cursor-pointer gap-3 px-3 py-2 hover:bg-[hsl(var(--muted))] rounded-xl transition-all"
                         >
                             {/* Avatar */}
                             <div className="w-9 h-9 rounded-full bg-[hsl(var(--primary))] flex items-center justify-center text-[hsl(var(--primary-foreground))] font-bold text-sm shadow-md shadow-[hsl(var(--primary))]/25">

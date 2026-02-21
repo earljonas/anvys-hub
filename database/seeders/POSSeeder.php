@@ -49,7 +49,7 @@ class POSSeeder extends Seeder
             ['name' => 'Graham', 'price' => 10],
             ['name' => 'Oreo', 'price' => 10],
         ];
-        
+
         foreach ($scrambleAddonNames as $a) {
             $addons[$a['name']] = Addon::create($a);
         }
@@ -60,19 +60,27 @@ class POSSeeder extends Seeder
         ];
 
         foreach ($sodaAddonNames as $a) {
-             $addons[$a['name']] = Addon::create($a);
+            $addons[$a['name']] = Addon::create($a);
         }
 
         // Create Ice Scramble Products
-        $scrambleFlavors = ['Strawberry', 'Chocolate', 'Ube', 'Pandan', 'Melon', 'Mango Graham'];
-        
-        foreach ($scrambleFlavors as $flavor) {
+        $scrambleFlavors = [
+            'Strawberry' => '/product_images/strawberry.jpg',
+            'Chocolate' => '/product_images/chocolate.jpg',
+            'Ube' => '/product_images/ube.jpg',
+            'Pandan' => '/product_images/pandan.jpg',
+            'Melon' => '/product_images/melon.jpg',
+            'Mango Graham' => '/product_images/mango_graham.jpg',
+        ];
+
+        foreach ($scrambleFlavors as $flavor => $image) {
             $product = Product::create([
                 'category_id' => $scrambleCategory->id,
                 'name' => $flavor . ' Ice Scramble',
                 'flavor' => $flavor,
                 'base_price' => 100,
                 'has_sizes' => true,
+                'image' => $image,
                 'is_active' => true,
             ]);
 
@@ -93,22 +101,27 @@ class POSSeeder extends Seeder
         }
 
         // Create Frappe Products (no sizes, no addons)
-        $frappeFlavors = ['Cookies & Cream', 'Cappuccino', 'Chocolate'];
-        
-        foreach ($frappeFlavors as $flavor) {
+        $frappeFlavors = [
+            'Cookies & Cream' => '/product_images/cookies_cream_frappe.jpg',
+            'Cappuccino' => '/product_images/cappuccino_frappe.jpg',
+            'Chocolate' => '/product_images/chocolate_frappe.jpg',
+        ];
+
+        foreach ($frappeFlavors as $flavor => $image) {
             Product::create([
                 'category_id' => $frappeCategory->id,
                 'name' => $flavor . ' Frappe',
                 'flavor' => $flavor,
                 'base_price' => 149,
                 'has_sizes' => false,
+                'image' => $image,
                 'is_active' => true,
             ]);
         }
 
         // Create Fruit Soda Products (with addons, no sizes)
         $sodaFlavors = ['Strawberry', 'Green Apple', 'Four Seasons', 'Lychee', 'Blueberry'];
-        
+
         foreach ($sodaFlavors as $flavor) {
             $product = Product::create([
                 'category_id' => $sodaCategory->id,

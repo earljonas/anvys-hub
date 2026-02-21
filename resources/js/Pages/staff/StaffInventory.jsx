@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
-import { Search, Package, AlertTriangle, XCircle, CheckCircle } from 'lucide-react';
 import StaffLayout from '../../Layouts/StaffLayout';
 import StaffInventoryTable from '../../Components/inventory/StaffInventoryTable';
 import AdjustStockModal from '../../Components/inventory/AdjustStockModal';
+import InventoryStats from '../../Components/inventory/InventoryStats';
+import StaffInventoryFilters from '../../Components/inventory/StaffInventoryFilters';
 
 const StaffInventory = ({ items: initialItems = [], staffLocationId }) => {
     const { employee } = usePage().props;
@@ -14,8 +15,9 @@ const StaffInventory = ({ items: initialItems = [], staffLocationId }) => {
         setItems(initialItems);
     }, [initialItems]);
 
-    // Search
+    // Filters
     const [searchQuery, setSearchQuery] = useState('');
+    const [statusFilter, setStatusFilter] = useState('All Status');
 
     // Pagination
     const [currentPage, setCurrentPage] = useState(1);
@@ -25,10 +27,12 @@ const StaffInventory = ({ items: initialItems = [], staffLocationId }) => {
     const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
 
-    // Filtered items based on search
-    const filteredItems = items.filter(item =>
-        item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // Filtered items based on search and status
+    const filteredItems = items.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === 'All Status' || item.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    });
 
     // Stats calculation
     const stats = {
@@ -64,91 +68,36 @@ const StaffInventory = ({ items: initialItems = [], staffLocationId }) => {
         });
     };
 
-    // Reset page when search changes
+    // Reset page when filters change
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchQuery]);
+    }, [searchQuery, statusFilter]);
 
     return (
-        <div className='space-y-6'>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
             <Head title="Inventory" />
 
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className='text-3xl font-bold tracking-tight text-[hsl(var(--foreground))]'>
+                    <h1 className="text-3xl font-bold tracking-tight text-[hsl(var(--foreground))]">
                         Inventory
                     </h1>
-                    <p className="text-[hsl(var(--muted-foreground))] mt-1">
-                        {employee?.locationName || 'Your Location'}
-                    </p>
                 </div>
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                            <Package className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-[hsl(var(--muted-foreground))]">Total Items</p>
-                            <p className="text-2xl font-bold text-[hsl(var(--foreground))]">{stats.totalItems}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-emerald-100 rounded-lg">
-                            <CheckCircle className="w-5 h-5 text-emerald-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-[hsl(var(--muted-foreground))]">In Stock</p>
-                            <p className="text-2xl font-bold text-emerald-600">{stats.inStock}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-amber-100 rounded-lg">
-                            <AlertTriangle className="w-5 h-5 text-amber-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-[hsl(var(--muted-foreground))]">Low Stock</p>
-                            <p className="text-2xl font-bold text-amber-600">{stats.lowStock}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-red-100 rounded-lg">
-                            <XCircle className="w-5 h-5 text-red-600" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-[hsl(var(--muted-foreground))]">Out of Stock</p>
-                            <p className="text-2xl font-bold text-red-600">{stats.outOfStock}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <InventoryStats stats={stats} />
 
             {/* Search and Table Container */}
-            <div className="bg-white/50 backdrop-blur-sm rounded-xl border border-[hsl(var(--border))]/50 p-6 shadow-sm space-y-4">
-                {/* Search Bar */}
-                <div className="relative max-w-md">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[hsl(var(--muted-foreground))]" />
-                    <input
-                        type="text"
-                        placeholder="Search items..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 border border-[hsl(var(--border))] rounded-xl bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all"
-                    />
-                </div>
+            <div className="bg-white/50 backdrop-blur-sm rounded-xl border border-[hsl(var(--border))]/50 p-6 shadow-sm">
+
+                <StaffInventoryFilters
+                    searchQuery={searchQuery}
+                    setSearchQuery={setSearchQuery}
+                    statusFilter={statusFilter}
+                    setStatusFilter={setStatusFilter}
+                />
 
                 {/* Inventory Table */}
                 <StaffInventoryTable
