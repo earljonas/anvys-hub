@@ -1,103 +1,62 @@
-# Anvys Hub 
+# Anvys Hub
 
-A full-stack business management system that combines POS, inventory tracking, and HR tools into one platform. It helps small to mid-sized businesses manage sales, monitor stock levels in real time, and handle employee records without switching between multiple systems.
+A business management platform built for small to mid-sized operations that need POS, inventory, and HR tooling without stitching together three separate systems. Everything runs through one interface — sales, stock levels, event management, employee records, payroll, scheduling.
 
----
-
-## Key Features
+## Features
 
 ### Point of Sale (POS)
-- Fast and responsive checkout interface designed for high-volume transactions.
-- Real-time product image integration and dynamic cart management.
-- Seamless staff context integration.
+The checkout interface handles high-volume transactions and integrates directly with product images. It runs with staff context aware of the current logged-in user to attribute sales correctly.
 
 ### Inventory Management
-- Comprehensive stock tracking and robust movement logs.
-- Dynamic staff inventory filters based on assigned locations.
-- Categorized product tables and automated stock auditing tools.
+Stock tracking includes detailed movement logs, categorization, and auditing tools. We rely on dynamic staff filters tied to assigned locations to ensure employees only interact with inventory they have access to.
 
-### Human Resources & Employee Management
-- **Attendance Tracking**: Secure PIN-based attendance with real-time clock-in/out validations.
-- **Automated Payroll**: Draft, pending, and finalized payroll generation. 
-- **Payslip Generation**: Dynamic PDF exports utilizing `jspdf` and `html2canvas`.
-- **Roster & Scheduling**: Advanced shift scheduling via interactive calendar interfaces powered by FullCalendar.
+### Human Resources and Payroll Management
+The HR module handles attendance tracking via PIN numbers with clock-in/out validations. It also automates payroll generation (draft, pending, finalized states) and supports exporting dynamic PDF payslips using `jspdf` and `html2canvas`. We manage staff scheduling with calendar interfaces powered by FullCalendar.
 
-### Reporting & Analytics
-- Detailed analytics and data grids for payroll summaries, inventory movements, and staff attendance.
+### Reports and Analytics
+Aggregates business data across four primary dashboards:
+- **Sales**: Tracks monthly/weekly revenue, peak hours, and best-selling products.
+- **Inventory**: Monitors low stock alerts, total valuation, and detailed movement logs.
+- **Events**: Summarizes upcoming bookings, attendee counts, and monthly event trends.
+- **Payroll**: Calculates Year-to-Date (YTD) totals, average net pay, and pending payroll statuses.
 
----
+### Event Management
+Handles customer bookings for private events like birthday parties or corporate functions. User can create and manage events through a calendar interface, with payment tracking built in to monitor deposits and balances per booking.
 
-## Tech Stack & Architecture
+## Tech Stack
+- **Backend**: Laravel 12.0 (PHP 8.2+) / MySQL
+- **Frontend**: React 19 / Inertia.js v2.0
+- **Styling**: Tailwind CSS v4 via Vite
 
-Anvys Hub is built on a modern, robust tech stack prioritizing performance, security, and developer experience.
+## Local Setup
 
-### Backend
-- **Framework:** [Laravel 12.0](https://laravel.com/) (PHP 8.2+)
-- **Database:** MySQL 
-- **Architecture:** Monolith backend paired with Inertia.js for seamless single-page application (SPA) delivery without the complexity of a separate API layer.
-
-### Frontend
-- **Core:** [React 19](https://react.dev/) integrated via [Inertia.js v2.0](https://inertiajs.com/)
-- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/) bundled with Vite
-- **Key Libraries:** 
-  - `lucide-react` for iconography
-  - `date-fns` for robust date/time manipulation
-  - `@fullcalendar/react` for event and roster management
-  - `motion` for fluid micro-interactions and animations
-
----
-
-## Getting Started
-
-Follow these instructions to set up the project on your local machine for development and testing.
-
-### Prerequisites
-- **PHP** >= 8.2
-- **Composer** (Dependency Manager for PHP)
-- **Node.js** (v18+) & **npm**
-- **MySQL** (or equivalent relational database)
-
-### Local Setup & Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd anvys-hub
-   ```
-
-2. **Install Backend Dependencies:**
+1. **Clone and Install Dependencies**
    ```bash
    composer install
-   ```
-
-3. **Install Frontend Dependencies:**
-   ```bash
    npm install
    ```
 
-4. **Environment Configuration:**
-   Copy the example environment file and generate an application key.
+2. **Environment Configuration**
+   Copy `.env.example` to `.env`.
+   Generate an application key:
    ```bash
-   cp .env.example .env
    php artisan key:generate
    ```
-   *Note: Ensure you update the `.env` file with your local database credentials (e.g., `DB_DATABASE=anvys_hub`).*
+   **Gotcha:** Before moving to the next step, you must configure your database credentials (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) in your `.env` file. If you run migrations without updating this, you will get connection refused or table not found errors.
 
-5. **Run Migrations & Seeders:**
-   Set up your database tables and seed initial foundational data (e.g., Roles, POS seeders).
+3. **Database Setup**
+   Run the migrations and seeders:
    ```bash
    php artisan migrate --seed
    ```
+   **Gotcha:** We rely heavily on seeders to set up initial roles and basic configuration. Never skip the `--seed` flag on a fresh install, or the app will break on login due to missing roles.
 
-6. **Start the Development Environment:**
-   Anvys Hub requires both the backend framework and the frontend Vite bundler to be running simultaneously.
-
-   **Option A: Concurrently (Recommended)**
+4. **Running the App**
+   Anvys Hub requires both the backend API and frontend Vite server running concurrently. You can either use the composer shortcut:
    ```bash
    composer run dev
    ```
-
-   **Option B: Separate Terminals**
+   Or run these in two separate terminals:
    ```bash
    php artisan serve
    ```
@@ -105,31 +64,17 @@ Follow these instructions to set up the project on your local machine for develo
    npm run dev
    ```
 
-7. **Access the Application:**
-   Open your browser and navigate to `http://localhost:8000`.
+## Project Structure
 
----
+A quick map of where things live so you aren't hunting for files:
 
-## 📂 Project Structure Overview
+- `app/Http/Controllers/`: Standard Laravel backend logic. Our business logic tends to live here instead of dedicated service classes.
+- `app/Models/`: Eloquent ORM. Pay attention to the relationships defined here before querying.
+- `database/seeders/`: Crucial for local development structure. Check `POSSeeder.php` to see how initial data is structured.
+- `resources/js/Pages/`: Top-level React views for Inertia.js. Each file generally maps 1:1 with a backend route.
+- `resources/js/Components/`: smaller, reusable UI pieces.
+- `routes/web.php`: Standard Laravel routing, mostly returning `Inertia::render()`.
 
-Understanding the core directory structure is crucial for seamless navigation and contribution.
+## License
 
-```text
-anvys-hub/
-├── app/
-│   ├── Http/Controllers/    # Backend business logic controllers 
-│   └── Models/              # Eloquent Object-Relational Mapping (ORM) models.
-├── database/
-│   ├── migrations/          # Version-controlled database schema changes.
-│   └── seeders/             # Initial database population scripts.
-├── resources/
-│   ├── css/                 # Global styles and Tailwind configuration
-│   └── js/
-│       ├── Components/      # Reusable React UI components.
-│       └── Pages/           # Top-level Inertia.js React views routed directly from Laravel.
-├── routes/
-│   └── web.php              # Application web route definitions.
-└── tests/                   # Automated application tests 
-```
-
----
+MIT License
