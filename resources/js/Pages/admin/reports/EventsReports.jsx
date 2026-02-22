@@ -43,7 +43,7 @@ const EventsReports = ({ stats, upcomingEvents, monthlyEvents }) => {
                 </div>
                 <Button
                     variant="primary"
-                    className="flex items-center gap-2 shadow-lg shadow-pink-500/20"
+                    className="flex items-center gap-2 shadow-lg shadow-pink-500/20 cursor-pointer"
                     onClick={exportEventsToCSV}
                 >
                     <Download size={18} /> Export CSV
