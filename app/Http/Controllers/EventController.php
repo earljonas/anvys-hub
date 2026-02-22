@@ -67,7 +67,7 @@ class EventController extends Controller
             'address' => 'nullable|string|max:500',
             'contactNumber' => 'nullable|string|max:50',
             'packageId' => 'required|exists:event_packages,id',
-            'eventDate' => 'required|date',
+            'eventDate' => 'required|date|after_or_equal:today',
             'eventTime' => 'required|string',
             'extraGuests' => 'integer|min:0',
             'totalPrice' => 'required|numeric|min:0',

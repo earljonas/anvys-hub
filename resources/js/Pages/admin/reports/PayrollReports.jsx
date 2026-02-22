@@ -98,7 +98,7 @@ const PayrollReports = ({
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Payroll Reports</h1>
-                <Button variant="primary" className="flex items-center gap-2 shadow-lg shadow-pink-500/20" onClick={exportToCSV}>
+                <Button variant="primary" className="flex items-center gap-2 shadow-lg shadow-pink-500/20 cursor-pointer" onClick={exportToCSV}>
                     <Download size={18} /> Export CSV
                 </Button>
             </div>

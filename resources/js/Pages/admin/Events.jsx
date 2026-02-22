@@ -258,7 +258,7 @@ const Events = () => {
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Event Booking</h1>
                 </div>
-                <Button variant="primary" onClick={() => handleAddEvent()} className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                <Button variant="primary" onClick={() => handleAddEvent()} className="flex items-center gap-2 shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-0.5 cursor-pointer">
                     <Plus size={18} /> Add Event
                 </Button>
             </div>
