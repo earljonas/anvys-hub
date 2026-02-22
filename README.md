@@ -44,14 +44,14 @@ Handles customer bookings for private events like birthday parties or corporate 
    ```bash
    php artisan key:generate
    ```
-   **Gotcha:** Before moving to the next step, you must configure your database credentials (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) in your `.env` file. If you run migrations without updating this, you will get connection refused or table not found errors.
+   Before moving to the next step, you must configure your database credentials (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) in your `.env` file. If you run migrations without updating this, you will get connection refused or table not found errors.
 
 3. **Database Setup**
    Run the migrations and seeders:
    ```bash
    php artisan migrate --seed
    ```
-   **Gotcha:** We rely heavily on seeders to set up initial roles and basic configuration. Never skip the `--seed` flag on a fresh install, or the app will break on login due to missing roles.
+   We rely heavily on seeders to set up initial roles and basic configuration. Never skip the `--seed` flag on a fresh install, or the app will break on login due to missing roles.
 
 4. **Running the App**
    Anvys Hub requires both the backend API and frontend Vite server running concurrently. You can either use the composer shortcut:
