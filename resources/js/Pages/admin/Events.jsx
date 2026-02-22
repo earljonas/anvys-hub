@@ -243,7 +243,7 @@ const Events = () => {
                 {event.paymentStatus && (
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${event.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' :
                         event.paymentStatus === 'PARTIAL' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
+                            'bg-red-100 text-red-700'
                         }`}>
                         {event.paymentStatus}
                     </span>
