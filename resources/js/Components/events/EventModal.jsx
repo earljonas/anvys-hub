@@ -27,7 +27,7 @@ const PaymentBadge = ({ status }) => {
     const config = {
         'PAID': 'bg-emerald-100 text-emerald-700 border-emerald-200',
         'PARTIAL': 'bg-amber-100 text-amber-700 border-amber-200',
-        'UNPAID': 'bg-slate-100 text-slate-600 border-slate-200'
+        'UNPAID': 'bg-red-100 text-red-700 border-red-200'
     };
 
     return (
@@ -422,10 +422,10 @@ const ErrorView = ({ message, onClose }) => (
 
                 {/* Text */}
                 <h3 className="text-xl font-bold text-[hsl(var(--foreground))] mb-2 tracking-tight">
-                    Date Unavailable
+                    Something went wrong
                 </h3>
                 <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed mb-7">
-                    Reservations cannot be made for dates that have already passed. Please choose today or an upcoming date to proceed with your booking.
+                    {message}
                 </p>
 
                 {/* Action button */}

@@ -161,8 +161,8 @@ const EventsReports = ({ stats, upcomingEvents, monthlyEvents }) => {
                                             <td className="py-3 px-2 text-center">
                                                 <span className={`
                                                     px-2 py-1 rounded-full text-xs font-medium capitalize
-                                                    ${event.status === 'paid' ? 'bg-green-100 text-green-700' :
-                                                        event.status === 'partial' ? 'bg-amber-100 text-amber-700' :
+                                                    ${event.status?.toLowerCase() === 'paid' ? 'bg-green-100 text-green-700' :
+                                                        event.status?.toLowerCase() === 'partial' ? 'bg-amber-100 text-amber-700' :
                                                             'bg-red-100 text-red-700'}
                                                 `}>
                                                     {event.status}
