@@ -32,6 +32,8 @@ Handles customer bookings for private events like birthday parties or corporate 
 
 1. **Clone and Install Dependencies**
    ```bash
+   git clone https://github.com/earljonas/anvys-hub.git
+   cd anvys-hub
    composer install
    npm install
    ```
