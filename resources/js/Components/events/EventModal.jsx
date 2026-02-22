@@ -70,6 +70,9 @@ const EventModal = ({
     });
     const [error, setError] = useState(null);
 
+    // Today's date in YYYY-MM-DD (used for min date constraint)
+    const today = new Date().toLocaleDateString('en-CA');
+
     // Derived State
     const isView = currentMode === 'view' || currentMode === 'view-only';
     const isAddMode = mode === 'add';
@@ -129,6 +132,10 @@ const EventModal = ({
     const handleSave = () => {
         if (!formData.customerName || !formData.eventDate) {
             alert("Please fill in required fields");
+            return;
+        }
+        if (formData.eventDate < today) {
+            setError('Cannot book an event on a past date. Please select today or a future date.');
             return;
         }
         onSave(formData);
@@ -243,6 +250,7 @@ const EventModal = ({
                                         <Input
                                             type="date"
                                             value={formData.eventDate}
+                                            min={today}
                                             onChange={e => setFormData({ ...formData, eventDate: e.target.value })}
                                         />
                                     </FormField>
@@ -354,8 +362,8 @@ const EventModal = ({
                     <div className="flex gap-3 w-full sm:w-auto">
                         {!isView ? (
                             <>
-                                <Button variant="ghost" onClick={onClose} className="flex-1 sm:flex-none">Discard</Button>
-                                <Button variant="primary" onClick={handleSave} className="flex-1 sm:flex-none">
+                                <Button variant="ghost" onClick={onClose} className="flex-1 sm:flex-none cursor-pointer">Discard</Button>
+                                <Button variant="primary" onClick={handleSave} className="flex-1 sm:flex-none cursor-pointer">
                                     {isAddMode ? 'Confirm Booking' : 'Save Changes'}
                                 </Button>
                             </>
@@ -400,12 +408,34 @@ const Section = ({ title, children }) => (
 );
 
 const ErrorView = ({ message, onClose }) => (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 text-center">
-            <AlertCircle className="mx-auto text-red-500 mb-4" size={48} />
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Error</h3>
-            <p className="text-gray-600 mb-4">{message}</p>
-            <Button variant="primary" onClick={onClose}>Close</Button>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+        <div className="bg-[hsl(var(--card))] border border-[hsl(var(--border))] rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+
+            {/* Top accent bar */}
+            <div className="h-1.5 w-full bg-gradient-to-r from-red-400 via-red-500 to-rose-500" />
+
+            <div className="p-7 flex flex-col items-center text-center">
+                {/* Icon badge */}
+                <div className="w-16 h-16 rounded-full bg-red-50 border-4 border-red-100 flex items-center justify-center mb-5 shadow-inner">
+                    <AlertCircle className="text-red-500" size={32} strokeWidth={2.5} />
+                </div>
+
+                {/* Text */}
+                <h3 className="text-xl font-bold text-[hsl(var(--foreground))] mb-2 tracking-tight">
+                    Date Unavailable
+                </h3>
+                <p className="text-sm text-[hsl(var(--muted-foreground))] leading-relaxed mb-7">
+                    Reservations cannot be made for dates that have already passed. Please choose today or an upcoming date to proceed with your booking.
+                </p>
+
+                {/* Action button */}
+                <button
+                    onClick={onClose}
+                    className="w-full py-2.5 rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] font-semibold text-sm hover:opacity-90 active:scale-[0.98] transition-all duration-150 shadow-sm cursor-pointer"
+                >
+                    Close
+                </button>
+            </div>
         </div>
     </div>
 );
