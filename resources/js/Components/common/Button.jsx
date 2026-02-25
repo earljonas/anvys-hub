@@ -8,7 +8,7 @@ const Button = ({
     className = '',
     ...props
 }) => {
-    const baseStyles = "flex items-center justify-center gap-2 transition-all rounded-lg disabled:opacity-50 disabled:cursor-not-allowed";
+    const baseStyles = "flex items-center justify-center gap-2 transition-all rounded-lg cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed";
 
     const variants = {
         primary: "bg-[hsl(var(--primary))] text-white hover:brightness-110 font-bold shadow-md hover:shadow-lg",
