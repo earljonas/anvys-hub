@@ -67,7 +67,7 @@ const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
             <button
                 ref={triggerRef}
                 onClick={toggleMenu}
-                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                className="p-2 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
             >
                 <MoreVertical size={16} />
             </button>
@@ -90,7 +90,7 @@ const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
                                     onEdit(employee);
                                     setIsOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2"
+                                className="w-full text-left px-3 py-2 text-sm text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] flex items-center gap-2 cursor-pointer"
                             >
                                 <Edit2 size={14} />
                                 Edit
@@ -101,7 +101,7 @@ const ActionMenu = ({ employee, onView, onEdit, onArchive }) => {
                                     onArchive(employee);
                                     setIsOpen(false);
                                 }}
-                                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                             >
                                 <Archive size={14} />
                                 Archive
@@ -124,7 +124,7 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
     const isEdit = mode === 'edit';
     const isView = mode === 'view';
 
-    const { data, setData, post, put, processing, errors, reset } = useForm({
+    const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
         first_name: '',
         last_name: '',
         contact_number: '',
@@ -140,6 +140,7 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
 
     useEffect(() => {
         if (isOpen) {
+            clearErrors();
             if (employee && (isEdit || isView)) {
                 setData({
                     first_name: employee.first_name || '',
