@@ -21,6 +21,17 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
     };
 
     const handlePrint = () => {
+        // Sanitize dynamic values before injecting into raw HTML
+        const escapeHtml = (str) => {
+            const val = str === null || str === undefined ? '' : String(str);
+            return val
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
         // Create a hidden iframe for printing (stays on same page)
         const iframe = document.createElement('iframe');
         iframe.style.position = 'absolute';
@@ -35,7 +46,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
             <!DOCTYPE html>
             <html>
             <head>
-                <title>Payslip - ${payroll.employee_name}</title>
+                <title>Payslip - ${escapeHtml(payroll.employee_name)}</title>
                 <style>
                     body { font-family: Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; }
                     .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }
@@ -62,7 +73,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                 <div class="info-row">
                     <div class="info-box">
                         <div class="info-label">Employee</div>
-                        <div class="info-value">${payroll.employee_name}</div>
+                        <div class="info-value">${escapeHtml(payroll.employee_name)}</div>
                     </div>
                     <div class="info-box">
                         <div class="info-label">Pay Period</div>
@@ -126,7 +137,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                         </tr>
                         ${payroll.individual_payslips.map(slip => `
                         <tr>
-                            <td>${slip.employee_name}</td>
+                            <td>${escapeHtml(slip.employee_name)}</td>
                             <td style="text-align: right;">${Number(slip.hours_worked).toFixed(2)} hrs</td>
                             <td style="text-align: right;">₱${Number(slip.gross_pay).toFixed(2)}</td>
                             <td style="text-align: right; color: #d32f2f;">${Number(slip.sss || 0) > 0 ? '-₱' + Number(slip.sss).toFixed(2) : 'N/A'}</td>

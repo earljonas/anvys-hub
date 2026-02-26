@@ -21,6 +21,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-4xl' }) => 
                         onClick={onClose}
                         className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                         type="button"
+                        aria-label="Close"
                     >
                         <X size={20} />
                     </button>
