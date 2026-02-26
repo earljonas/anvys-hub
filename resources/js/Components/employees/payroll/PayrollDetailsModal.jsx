@@ -1,6 +1,6 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useForm } from '@inertiajs/react';
-import { X, Printer, CreditCard, CheckCircle, FileText } from 'lucide-react';
+import { X, Printer, CreditCard, CheckCircle, FileText, Users, ChevronDown } from 'lucide-react';
 import { format } from 'date-fns';
 import Modal from '@/Components/employees/Modal';
 import Button from '@/Components/employees/Button';
@@ -8,6 +8,7 @@ import Button from '@/Components/employees/Button';
 const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
     const { post, processing } = useForm();
     const printRef = useRef();
+    const [showBreakdown, setShowBreakdown] = useState(false);
 
     if (!isOpen || !payroll) return null;
 
@@ -110,6 +111,43 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                     </tr>
                 </table>
 
+                ${payroll.is_bulk && payroll.individual_payslips ? `
+                <div style="margin-top: 30px;">
+                    <h3 style="font-size: 16px; font-weight: bold; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #333;">Employee Breakdown</h3>
+                    <table style="font-size: 13px;">
+                        <tr>
+                            <th>Employee</th>
+                            <th style="text-align: right;">Hours</th>
+                            <th style="text-align: right;">Gross Pay</th>
+                            <th style="text-align: right; color: #d32f2f;">SSS</th>
+                            <th style="text-align: right; color: #d32f2f;">PhilHealth</th>
+                            <th style="text-align: right; color: #d32f2f;">Pag-IBIG</th>
+                            <th style="text-align: right;">Net Pay</th>
+                        </tr>
+                        ${payroll.individual_payslips.map(slip => `
+                        <tr>
+                            <td>${slip.employee_name}</td>
+                            <td style="text-align: right;">${Number(slip.hours_worked).toFixed(2)} hrs</td>
+                            <td style="text-align: right;">₱${Number(slip.gross_pay).toFixed(2)}</td>
+                            <td style="text-align: right; color: #d32f2f;">${Number(slip.sss || 0) > 0 ? '-₱' + Number(slip.sss).toFixed(2) : 'N/A'}</td>
+                            <td style="text-align: right; color: #d32f2f;">${Number(slip.philhealth || 0) > 0 ? '-₱' + Number(slip.philhealth).toFixed(2) : 'N/A'}</td>
+                            <td style="text-align: right; color: #d32f2f;">${Number(slip.pagibig || 0) > 0 ? '-₱' + Number(slip.pagibig).toFixed(2) : 'N/A'}</td>
+                            <td style="text-align: right; color: #2e7d32; font-weight: bold;">₱${Number(slip.net_pay).toFixed(2)}</td>
+                        </tr>
+                        `).join('')}
+                        <tr class="total-row">
+                            <td style="font-weight: bold;">TOTALS</td>
+                            <td style="text-align: right;">${Number(payroll.total_hours).toFixed(2)} hrs</td>
+                            <td style="text-align: right;">₱${Number(payroll.gross_pay).toFixed(2)}</td>
+                            <td style="text-align: right; color: #d32f2f;">-₱${Number(payroll.sss_deduction || 0).toFixed(2)}</td>
+                            <td style="text-align: right; color: #d32f2f;">-₱${Number(payroll.philhealth_deduction || 0).toFixed(2)}</td>
+                            <td style="text-align: right; color: #d32f2f;">-₱${Number(payroll.pagibig_deduction || 0).toFixed(2)}</td>
+                            <td style="text-align: right;">₱${Number(payroll.net_pay).toFixed(2)}</td>
+                        </tr>
+                    </table>
+                </div>
+                ` : ''}
+
                 <div style="margin-top: 40px; text-align: center; color: #999; font-size: 12px;">
                     Generated on ${format(new Date(), 'MMMM dd, yyyy')}
                 </div>
@@ -175,19 +213,38 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
 
                     {/* Individual Deductions */}
                     <div className="py-2 border-b border-[hsl(var(--border))]/50">
-                        <div className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase mb-2">Deductions</div>
+                        <div className="flex items-center gap-2 mb-2">
+                            <div className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">Deductions</div>
+                            {(Number(payroll.sss_deduction || 0) === 0 && Number(payroll.gross_pay || 0) > 0) && (
+                                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
+                                    Waived: Under 14 Days
+                                </span>
+                            )}
+                        </div>
                         <div className="space-y-1 pl-3">
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-[hsl(var(--muted-foreground))]">SSS</span>
-                                <span className="text-sm font-medium text-red-500">-₱{Number(payroll.sss_deduction || 0).toFixed(2)}</span>
+                                {Number(payroll.sss_deduction || 0) > 0 ? (
+                                    <span className="text-sm font-medium text-red-500">-₱{Number(payroll.sss_deduction).toFixed(2)}</span>
+                                ) : (
+                                    <span className="text-sm font-medium text-[hsl(var(--muted-foreground))]" title="Waived: Under 14-day minimum threshold">N/A</span>
+                                )}
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-[hsl(var(--muted-foreground))]">PhilHealth</span>
-                                <span className="text-sm font-medium text-red-500">-₱{Number(payroll.philhealth_deduction || 0).toFixed(2)}</span>
+                                {Number(payroll.philhealth_deduction || 0) > 0 ? (
+                                    <span className="text-sm font-medium text-red-500">-₱{Number(payroll.philhealth_deduction).toFixed(2)}</span>
+                                ) : (
+                                    <span className="text-sm font-medium text-[hsl(var(--muted-foreground))]" title="Waived: Under 14-day minimum threshold">N/A</span>
+                                )}
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-[hsl(var(--muted-foreground))]">Pag-IBIG</span>
-                                <span className="text-sm font-medium text-red-500">-₱{Number(payroll.pagibig_deduction || 0).toFixed(2)}</span>
+                                {Number(payroll.pagibig_deduction || 0) > 0 ? (
+                                    <span className="text-sm font-medium text-red-500">-₱{Number(payroll.pagibig_deduction).toFixed(2)}</span>
+                                ) : (
+                                    <span className="text-sm font-medium text-[hsl(var(--muted-foreground))]" title="Waived: Under 14-day minimum threshold">N/A</span>
+                                )}
                             </div>
                             {Number(payroll.tax_deduction || 0) > 0 && (
                                 <div className="flex justify-between items-center">
@@ -203,6 +260,64 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Employee Breakdown Section (Only shows for Bulk Payrolls) */}
+            {payroll.is_bulk && (
+                <div className="mt-4 bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] overflow-hidden">
+                    <div
+                        className="p-4 border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))]/10 flex justify-between items-center cursor-pointer hover:bg-[hsl(var(--muted))]/20 transition-colors"
+                        onClick={() => setShowBreakdown(!showBreakdown)}
+                    >
+                        <h3 className="font-bold text-[hsl(var(--foreground))] flex items-center gap-2">
+                            <Users size={16} />
+                            Employee Breakdown
+                        </h3>
+                        <ChevronDown size={16} className={`transition-transform duration-200 ${showBreakdown ? 'rotate-180' : ''}`} />
+                    </div>
+
+                    {showBreakdown && (
+                        <div className="p-0 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-[hsl(var(--muted))]/30 text-[hsl(var(--muted-foreground))]">
+                                        <tr>
+                                            <th className="px-3 py-3 font-medium">Employee</th>
+                                            <th className="px-3 py-3 font-medium text-right">Hours</th>
+                                            <th className="px-3 py-3 font-medium text-right">Gross</th>
+                                            <th className="px-3 py-3 font-medium text-right text-red-400">SSS</th>
+                                            <th className="px-3 py-3 font-medium text-right text-red-400">PhilHealth</th>
+                                            <th className="px-3 py-3 font-medium text-right text-red-400">Pag-IBIG</th>
+                                            <th className="px-3 py-3 font-medium text-right">Net Pay</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[hsl(var(--border))]/50">
+                                        {payroll.individual_payslips && payroll.individual_payslips.map((slip) => (
+                                            <tr key={slip.id} className="hover:bg-[hsl(var(--muted))]/10">
+                                                <td className="px-3 py-3 font-medium text-[hsl(var(--foreground))]">{slip.employee_name}</td>
+                                                <td className="px-3 py-3 text-right">{Number(slip.hours_worked).toFixed(2)} hrs</td>
+                                                <td className="px-3 py-3 text-right">₱{Number(slip.gross_pay).toFixed(2)}</td>
+                                                <td className="px-3 py-3 text-right text-red-500">{Number(slip.sss || 0) > 0 ? `-₱${Number(slip.sss).toFixed(2)}` : 'N/A'}</td>
+                                                <td className="px-3 py-3 text-right text-red-500">{Number(slip.philhealth || 0) > 0 ? `-₱${Number(slip.philhealth).toFixed(2)}` : 'N/A'}</td>
+                                                <td className="px-3 py-3 text-right text-red-500">{Number(slip.pagibig || 0) > 0 ? `-₱${Number(slip.pagibig).toFixed(2)}` : 'N/A'}</td>
+                                                <td className="px-3 py-3 text-right font-medium text-green-700">₱{Number(slip.net_pay).toFixed(2)}</td>
+                                            </tr>
+                                        ))}
+                                        <tr className="bg-[hsl(var(--muted))]/20 font-bold">
+                                            <td className="px-3 py-3 text-[hsl(var(--foreground))]">Totals</td>
+                                            <td className="px-3 py-3 text-right">{Number(payroll.total_hours).toFixed(2)} hrs</td>
+                                            <td className="px-3 py-3 text-right">₱{Number(payroll.gross_pay).toFixed(2)}</td>
+                                            <td className="px-3 py-3 text-right text-red-500">{Number(payroll.sss_deduction || 0) > 0 ? `-₱${Number(payroll.sss_deduction).toFixed(2)}` : 'N/A'}</td>
+                                            <td className="px-3 py-3 text-right text-red-500">{Number(payroll.philhealth_deduction || 0) > 0 ? `-₱${Number(payroll.philhealth_deduction).toFixed(2)}` : 'N/A'}</td>
+                                            <td className="px-3 py-3 text-right text-red-500">{Number(payroll.pagibig_deduction || 0) > 0 ? `-₱${Number(payroll.pagibig_deduction).toFixed(2)}` : 'N/A'}</td>
+                                            <td className="px-3 py-3 text-right text-green-700">₱{Number(payroll.net_pay).toFixed(2)}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {/* Actions */}
             <div className="flex justify-between items-center pt-4 mt-4 border-t border-[hsl(var(--border))]">

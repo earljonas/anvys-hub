@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { X } from 'lucide-react';
 
 const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-4xl' }) => {
     if (!isOpen) return null;
@@ -18,10 +19,10 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-4xl' }) => 
                     <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">{title}</h2>
                     <button
                         onClick={onClose}
-                        className="text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                        className="text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
                         type="button"
                     >
-                        ✖
+                        <X size={20} />
                     </button>
                 </div>
                 <div className="p-6">
