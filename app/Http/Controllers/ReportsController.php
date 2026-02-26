@@ -331,7 +331,7 @@ class ReportsController extends Controller
             ];
         }
 
-        // 6. Recent Payroll History
+        // 6. Recent Payroll History with Individual Payslips
         $recentPayrollsData = DB::table('payrolls')
             ->orderBy('created_at', 'desc')
             ->limit(10)
@@ -339,21 +339,67 @@ class ReportsController extends Controller
 
         $payrollIds = $recentPayrollsData->pluck('id');
 
-        $payslipCounts = DB::table('payslips')
+        $payslipsData = DB::table('payslips')
+            ->join('users', 'payslips.user_id', '=', 'users.id')
             ->whereIn('payroll_id', $payrollIds)
-            ->select('payroll_id', DB::raw('count(*) as count'))
-            ->groupBy('payroll_id')
-            ->pluck('count', 'payroll_id');
+            ->select(
+                'payslips.id',
+                'payslips.payroll_id',
+                'payslips.gross_pay',
+                'payslips.net_pay',
+                'payslips.hours_worked',
+                'payslips.deductions',
+                'users.name as employee_name'
+            )
+            ->get();
 
-        $recentPayrolls = $recentPayrollsData->map(function ($payroll) use ($payslipCounts) {
+        $recentPayrolls = $recentPayrollsData->map(function ($payroll) use ($payslipsData) {
+            $payrollPayslips = $payslipsData->where('payroll_id', $payroll->id)->values();
+
             return [
                 'id' => $payroll->id,
                 'reference' => 'PAY-' . str_pad($payroll->id, 5, '0', STR_PAD_LEFT),
                 'period' => Carbon::parse($payroll->start_date)->format('M d') . ' - ' . Carbon::parse($payroll->end_date)->format('M d, Y'),
-                'employees' => $payslipCounts[$payroll->id] ?? 0,
+                'employees' => $payrollPayslips->count(),
                 'amount' => $payroll->total_amount,
                 'status' => $payroll->status,
                 'date' => $payroll->payment_date ? Carbon::parse($payroll->payment_date)->format('M d, Y') : 'N/A',
+                'individual_payslips' => $payrollPayslips->map(function ($slip) {
+                    $deductions = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+                    return [
+                        'id' => $slip->id,
+                        'employee_name' => $slip->employee_name,
+                        'hours_worked' => $slip->hours_worked,
+                        'gross_pay' => $slip->gross_pay,
+                        'net_pay' => $slip->net_pay,
+                        'sss' => (float) ($deductions['sss'] ?? 0),
+                        'philhealth' => (float) ($deductions['philhealth'] ?? 0),
+                        'pagibig' => (float) ($deductions['pagibig'] ?? 0),
+                        'tax' => (float) ($deductions['tax'] ?? 0),
+                    ];
+                }),
+                'is_bulk' => $payrollPayslips->count() > 1,
+                // Aggregates computed from already-loaded data (no extra queries)
+                'gross_pay' => $payrollPayslips->sum('gross_pay'),
+                'net_pay' => $payrollPayslips->sum('net_pay'),
+                'total_hours' => $payrollPayslips->sum('hours_worked'),
+                'employee_name' => $payrollPayslips->count() === 1 ? $payrollPayslips->first()->employee_name : 'Bulk Payroll (' . $payrollPayslips->count() . ' Employees)',
+                'sss_deduction' => $payrollPayslips->sum(function ($slip) {
+                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+                    return (float) ($d['sss'] ?? 0);
+                }),
+                'philhealth_deduction' => $payrollPayslips->sum(function ($slip) {
+                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+                    return (float) ($d['philhealth'] ?? 0);
+                }),
+                'pagibig_deduction' => $payrollPayslips->sum(function ($slip) {
+                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+                    return (float) ($d['pagibig'] ?? 0);
+                }),
+                'tax_deduction' => $payrollPayslips->sum(function ($slip) {
+                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+                    return (float) ($d['tax'] ?? 0);
+                }),
             ];
         });
 
