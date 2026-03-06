@@ -81,6 +81,11 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/reports/inventory', [ReportsController::class, 'inventory'])->name('admin.reports.inventory');
     Route::get('/reports/events', [ReportsController::class, 'events'])->name('admin.reports.events');
     Route::get('/reports/payroll', [ReportsController::class, 'payroll'])->name('admin.reports.payroll');
+
+    Route::get('/reports/sales/export', [ReportsController::class, 'exportSalesCsv'])->name('admin.reports.sales.export');
+    Route::get('/reports/inventory/export', [ReportsController::class, 'exportInventoryCsv'])->name('admin.reports.inventory.export');
+    Route::get('/reports/events/export', [ReportsController::class, 'exportEventsCsv'])->name('admin.reports.events.export');
+    Route::get('/reports/payroll/export', [ReportsController::class, 'exportPayrollCsv'])->name('admin.reports.payroll.export');
 });
 
 Route::prefix('staff')->middleware('auth')->group(function () {

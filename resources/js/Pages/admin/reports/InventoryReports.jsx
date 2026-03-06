@@ -1,11 +1,15 @@
 import React from 'react';
+import { router } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import { Package, TrendingDown, AlertTriangle, DollarSign, History, Download } from 'lucide-react';
+import { Package, TrendingDown, AlertTriangle, DollarSign, History, Download, Filter } from 'lucide-react';
 import StatCard from '../../../Components/reports/StatCard';
 import Button from '../../../Components/common/Button';
 import Pagination from '../../../Components/common/Pagination';
 
-const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
+const InventoryReports = ({ stats, stockLogs, lowStockItems, locations = [], filters = {} }) => {
+
+    const currentLocation = filters.location || '';
+    const currentType = filters.type || '';
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('en-PH', {
@@ -15,36 +19,25 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
         }).format(value);
     };
 
-    const exportStockLogsToCSV = () => {
-        // Handle paginated data for export - getting current page data for now
-        // Ideally should fetch all for export, but for now exporting visible
-        const dataToExport = stockLogs.data || stockLogs;
-
-        const headers = ['Date', 'Time', 'Item', 'Location', 'Action', 'Quantity', 'Notes', 'Adjusted By'];
-        const rows = dataToExport.map(log => [
-            log.date,
-            log.time || '',
-            log.item,
-            log.location,
-            log.type,
-            log.quantity,
-            log.notes ? `"${log.notes.replace(/"/g, '""')}"` : '',
-            log.user || log.adjustedBy || '',
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `stock-logs-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+    const handleFilterChange = (key, value) => {
+        const newFilters = { ...filters, [key]: value };
+        Object.keys(newFilters).forEach(k => {
+            if (!newFilters[k]) delete newFilters[k];
+        });
+        router.get('/admin/reports/inventory', newFilters, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
+
+    const exportToCSV = () => {
+        const params = new URLSearchParams();
+        if (currentLocation) params.set('location', currentLocation);
+        if (currentType) params.set('type', currentType);
+        window.open(`/admin/reports/inventory/export?${params.toString()}`, '_blank');
+    };
+
+    const hasActiveFilters = currentLocation || currentType;
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
@@ -56,10 +49,50 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                 <Button
                     variant="primary"
                     className="flex items-center gap-2 shadow-lg shadow-pink-500/20 cursor-pointer"
-                    onClick={exportStockLogsToCSV}
+                    onClick={exportToCSV}
                 >
                     <Download size={18} /> Export CSV
                 </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                        <Filter size={16} /> Filters
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <select
+                            value={currentLocation}
+                            onChange={(e) => handleFilterChange('location', e.target.value)}
+                            className="px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all cursor-pointer"
+                        >
+                            <option value="">All Locations</option>
+                            {locations.map(loc => (
+                                <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={currentType}
+                            onChange={(e) => handleFilterChange('type', e.target.value)}
+                            className="px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all cursor-pointer"
+                        >
+                            <option value="">All Types</option>
+                            <option value="IN">Stock In</option>
+                            <option value="OUT">Stock Out</option>
+                        </select>
+                    </div>
+                    {hasActiveFilters && (
+                        <button
+                            onClick={() => {
+                                router.get('/admin/reports/inventory', {}, { preserveState: true, preserveScroll: true });
+                            }}
+                            className="text-xs text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                        >
+                            Clear filters
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -167,7 +200,10 @@ const InventoryReports = ({ stats, stockLogs, lowStockItems }) => {
                                             <tr key={log.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
                                                 <td className="py-3 px-2">
                                                     <div className="font-medium text-[hsl(var(--foreground))]">
-                                                        {log.type === 'restock' ? 'Restocked' : log.type === 'usage' ? 'Used' : log.type} {log.quantity} {log.item}
+                                                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-bold mr-1.5 ${log.type === 'IN' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                                                            {log.type === 'IN' ? '+' : '-'}
+                                                        </span>
+                                                        {log.quantity} {log.item}
                                                     </div>
                                                 </td>
                                                 <td className="py-3 px-2 text-xs text-[hsl(var(--muted-foreground))]">{log.location}</td>

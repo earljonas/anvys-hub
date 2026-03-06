@@ -1,9 +1,11 @@
 import React from 'react';
+import { router } from '@inertiajs/react';
 import AdminLayout from '../../../Layouts/AdminLayout';
-import { DollarSign, TrendingUp, Clock, Calendar, Users, Download } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Calendar, Users, Download, Filter } from 'lucide-react';
 import StatCard from '../../../Components/reports/StatCard';
 import Button from '../../../Components/common/Button';
 import BarChart from '../../../Components/reports/BarChart';
+import Pagination from '../../../Components/common/Pagination';
 
 const PayrollReports = ({
     stats = {
@@ -15,8 +17,14 @@ const PayrollReports = ({
         totalHoursWorked: 0
     },
     monthlyPayrollCost = [],
-    recentPayrolls = []
+    recentPayrolls = { data: [], links: [] },
+    filters = {}
 }) => {
+
+    const currentMonth = filters.month || new Date().toISOString().slice(0, 7);
+    const currentStatus = filters.status || '';
+
+    const monthLabel = new Date(currentMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const formatCurrency = (value) => {
         const numValue = Number(value) || 0;
@@ -31,76 +39,72 @@ const PayrollReports = ({
         return new Intl.NumberFormat('en-PH').format(Number(value) || 0);
     };
 
-    // calculate max cost for chart scaling
-    const maxCost = monthlyPayrollCost && monthlyPayrollCost.length > 0
-        ? Math.max(...monthlyPayrollCost.map(m => m.cost), 1)
-        : 1;
+    const handleFilterChange = (key, value) => {
+        const newFilters = { ...filters, [key]: value };
+        Object.keys(newFilters).forEach(k => {
+            if (!newFilters[k]) delete newFilters[k];
+        });
+        router.get('/admin/reports/payroll', newFilters, {
+            preserveState: true,
+            preserveScroll: true,
+        });
+    };
 
     const exportToCSV = () => {
-        const today = new Date().toISOString().split('T')[0];
-
-        // Define sanitizer function within exportToCSV
-        const sanitizeCsvCell = (cell) => {
-            let stringValue = (cell === null || cell === undefined) ? '' : String(cell);
-
-            // Neutralize potential formulas
-            if (/^[=+\-@]/.test(stringValue)) {
-                stringValue = "'" + stringValue;
-            }
-
-            // Escape double quotes by doubling them
-            if (stringValue.includes('"')) {
-                stringValue = stringValue.replace(/"/g, '""');
-            }
-
-            // Wrap in double quotes
-            return `"${stringValue}"`;
-        };
-
-        // Summary section
-        let csvContent = 'PAYROLL SUMMARY REPORT\n';
-        csvContent += `Generated on,${today}\n\n`;
-
-        // Stats
-        csvContent += 'KEY METRICS\n';
-        csvContent += `Total Payroll (YTD),${stats.totalPayrollYTD}\n`;
-        csvContent += `Average Net Pay,${stats.averageNetPay}\n`;
-        csvContent += `Pending Payrolls,${stats.pendingPayrolls}\n`;
-        csvContent += `Employees on Payroll,${stats.totalEmployeesOnPayroll}\n\n`;
-
-        // Monthly breakdown
-        csvContent += 'MONTHLY PAYROLL COST\n';
-        csvContent += 'Month,Amount\n';
-        monthlyPayrollCost.forEach(m => {
-            csvContent += `${sanitizeCsvCell(m.month)},${m.cost}\n`;
-        });
-        csvContent += '\n';
-
-        // Recent payrolls
-        csvContent += 'RECENT PAYROLLS\n';
-        csvContent += 'Reference,Period,Employees,Amount,Status,Date\n';
-        recentPayrolls.forEach(p => {
-            // Apply sanitizer to string fields
-            csvContent += `${sanitizeCsvCell(p.reference)},${sanitizeCsvCell(p.period)},${p.employees},${p.amount},${sanitizeCsvCell(p.status)},${p.date}\n`;
-        });
-
-        // Download
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `payroll-report-${today}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+        const params = new URLSearchParams();
+        if (currentMonth) params.set('month', currentMonth);
+        if (currentStatus) params.set('status', currentStatus);
+        window.open(`/admin/reports/payroll/export?${params.toString()}`, '_blank');
     };
+
+    const payrolls = recentPayrolls?.data || recentPayrolls || [];
+    const hasActiveFilters = currentStatus;
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Payroll Reports</h1>
+                <div>
+                    <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Payroll Reports</h1>
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">{monthLabel}</p>
+                </div>
                 <Button variant="primary" className="flex items-center gap-2 shadow-lg shadow-pink-500/20 cursor-pointer" onClick={exportToCSV}>
                     <Download size={18} /> Export CSV
                 </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                        <Filter size={16} /> Filters
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <input
+                            type="month"
+                            value={currentMonth}
+                            onChange={(e) => handleFilterChange('month', e.target.value)}
+                            className="px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all cursor-pointer"
+                        />
+                        <select
+                            value={currentStatus}
+                            onChange={(e) => handleFilterChange('status', e.target.value)}
+                            className="px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all cursor-pointer"
+                        >
+                            <option value="">All Statuses</option>
+                            <option value="paid">Paid</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Draft">Draft</option>
+                        </select>
+                    </div>
+                    {hasActiveFilters && (
+                        <button
+                            onClick={() => handleFilterChange('status', '')}
+                            className="text-xs text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                        >
+                            Clear filters
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Stats Cards */}
@@ -158,32 +162,35 @@ const PayrollReports = ({
                 {/* Recent Payrolls List */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2 text-[hsl(var(--foreground))]">
-                        <Calendar size={20} /> Recent Payrolls
+                        <Calendar size={20} /> Payrolls — {monthLabel}
                     </h3>
 
-                    <div className="space-y-3 max-h-72 overflow-y-auto">
-                        {recentPayrolls && recentPayrolls.length > 0 ? (
-                            recentPayrolls.map((payroll) => (
-                                <div key={payroll.id} className="flex items-center justify-between p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors">
-                                    <div>
-                                        <div className="font-medium text-[hsl(var(--foreground))]">{payroll.period}</div>
-                                        <div className="text-xs text-[hsl(var(--muted-foreground))]">
-                                            {payroll.reference} • {payroll.employees} Employee{payroll.employees !== 1 ? 's' : ''}
+                    <div className="space-y-3">
+                        {payrolls && payrolls.length > 0 ? (
+                            <>
+                                {payrolls.map((payroll) => (
+                                    <div key={payroll.id} className="flex items-center justify-between p-3 rounded-lg border border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.5)] transition-colors">
+                                        <div>
+                                            <div className="font-medium text-[hsl(var(--foreground))]">{payroll.period}</div>
+                                            <div className="text-xs text-[hsl(var(--muted-foreground))]">
+                                                {payroll.reference} • {payroll.employees} Employee{payroll.employees !== 1 ? 's' : ''}
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="font-bold text-[hsl(var(--foreground))]">{formatCurrency(payroll.amount)}</div>
+                                            <div className={`text-xs font-medium capitalize ${payroll.status === 'paid' ? 'text-emerald-600' :
+                                                (payroll.status === 'Pending' || payroll.status === 'draft') ? 'text-amber-600' : 'text-[hsl(var(--muted-foreground))]'
+                                                }`}>
+                                                {payroll.status}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div className="text-right">
-                                        <div className="font-bold text-[hsl(var(--foreground))]">{formatCurrency(payroll.amount)}</div>
-                                        <div className={`text-xs font-medium capitalize ${payroll.status === 'paid' ? 'text-emerald-600' :
-                                            (payroll.status === 'Pending' || payroll.status === 'draft') ? 'text-amber-600' : 'text-[hsl(var(--muted-foreground))]'
-                                            }`}>
-                                            {payroll.status}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))
+                                ))}
+                                <Pagination links={recentPayrolls?.links} />
+                            </>
                         ) : (
                             <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">
-                                No payrolls found.
+                                No payrolls found for {monthLabel}.
                             </div>
                         )}
                     </div>
