@@ -5,6 +5,7 @@ import AdminLayout from '@/Layouts/AdminLayout';
 import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X } from 'lucide-react';
 import Button from '@/Components/common/Button';
 import Input from '@/Components/common/Input';
+import ConfirmModal from '@/Components/common/ConfirmModal';
 import { Card } from '@/Components/employees/Card';
 import Badge from '@/Components/employees/Badge';
 import Pagination from '@/Components/employees/Pagination';
@@ -396,6 +397,7 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create');
     const [selectedEmployee, setSelectedEmployee] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, employee: null, action: null });
 
     const handleSearch = (e) => {
         const query = e.target.value;
@@ -428,15 +430,21 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
     };
 
     const handleDelete = (employee) => {
-        if (confirm(`Are you sure you want to archive ${employee.name}?`)) {
-            router.delete(route('admin.employees.archive', employee.id));
-        }
+        setConfirmModal({ isOpen: true, employee, action: 'archive' });
     };
 
     const handleRestore = (employee) => {
-        if (confirm(`Are you sure you want to restore ${employee.name}?`)) {
+        setConfirmModal({ isOpen: true, employee, action: 'restore' });
+    };
+
+    const handleConfirmAction = () => {
+        const { employee, action } = confirmModal;
+        if (action === 'archive') {
+            router.delete(route('admin.employees.archive', employee.id));
+        } else if (action === 'restore') {
             router.post(route('admin.employees.restore', employee.id));
         }
+        setConfirmModal({ isOpen: false, employee: null, action: null });
     };
 
     return (
@@ -580,6 +588,19 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                 employee={selectedEmployee}
                 mode={modalMode}
                 locations={locations}
+            />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, employee: null, action: null })}
+                onConfirm={handleConfirmAction}
+                title={confirmModal.action === 'archive' ? 'Archive Employee' : 'Restore Employee'}
+                message={confirmModal.action === 'archive'
+                    ? `Are you sure you want to archive ${confirmModal.employee?.name}?`
+                    : `Are you sure you want to restore ${confirmModal.employee?.name}?`
+                }
+                variant={confirmModal.action === 'archive' ? 'confirm' : 'warning'}
+                confirmText={confirmModal.action === 'archive' ? 'Archive' : 'Restore'}
             />
         </div>
     );

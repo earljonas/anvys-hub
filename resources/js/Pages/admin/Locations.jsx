@@ -3,6 +3,7 @@ import { router, usePage } from '@inertiajs/react';
 import AdminLayout from '../../Layouts/AdminLayout';
 import { Plus, Archive, LayoutGrid } from 'lucide-react';
 import Button from '../../Components/common/Button';
+import ConfirmModal from '../../Components/common/ConfirmModal';
 import LocationCard from '../../Components/locations/LocationCard';
 import AddLocationCard from '../../Components/locations/AddLocationCard';
 import LocationModal from '../../Components/locations/LocationModal';
@@ -14,6 +15,7 @@ const Locations = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('view');
     const [selectedLocation, setSelectedLocation] = useState(null);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, location: null });
 
     // Filter Logic
     const activeLocations = locations.filter(l => l.status === 'Active');
@@ -40,11 +42,16 @@ const Locations = () => {
     };
 
     const handleDelete = (location) => {
-        if (confirm(`Are you sure you want to archive ${location.name}?`)) {
-            router.delete(`/admin/locations/${location.id}`, {
+        setConfirmModal({ isOpen: true, location });
+    };
+
+    const confirmDelete = () => {
+        if (confirmModal.location) {
+            router.delete(`/admin/locations/${confirmModal.location.id}`, {
                 preserveScroll: true,
             });
         }
+        setConfirmModal({ isOpen: false, location: null });
     };
 
     const handleSave = (data) => {
@@ -123,6 +130,16 @@ const Locations = () => {
                 mode={modalMode}
                 location={selectedLocation}
                 onSave={handleSave}
+            />
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, location: null })}
+                onConfirm={confirmDelete}
+                title="Archive Location"
+                message={`Are you sure you want to archive ${confirmModal.location?.name}?`}
+                variant="confirm"
+                confirmText="Archive"
             />
         </div>
     );

@@ -4,6 +4,7 @@ import { X, Printer, CreditCard, CheckCircle, FileText, Users, ChevronDown } fro
 import { format } from 'date-fns';
 import Modal from '@/Components/employees/Modal';
 import Button from '@/Components/employees/Button';
+import ConfirmModal from '@/Components/common/ConfirmModal';
 
 const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
     const { post, processing } = useForm();
@@ -12,12 +13,16 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
 
     if (!isOpen || !payroll) return null;
 
+    const [paidConfirmOpen, setPaidConfirmOpen] = useState(false);
+
     const handleMarkAsPaid = () => {
-        if (confirm('Are you sure you want to mark this payroll as PAID? This action cannot be undone.')) {
-            post(route('admin.payroll.pay', payroll.id), {
-                onSuccess: () => onClose()
-            });
-        }
+        setPaidConfirmOpen(true);
+    };
+
+    const confirmMarkAsPaid = () => {
+        post(route('admin.payroll.pay', payroll.id), {
+            onSuccess: () => onClose()
+        });
     };
 
     const handlePrint = () => {
@@ -349,6 +354,16 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                     )}
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={paidConfirmOpen}
+                onClose={() => setPaidConfirmOpen(false)}
+                onConfirm={confirmMarkAsPaid}
+                title="Mark as Paid"
+                message="Are you sure you want to mark this payroll as PAID? This action cannot be undone."
+                variant="warning"
+                confirmText="Mark as Paid"
+            />
         </Modal>
     );
 };

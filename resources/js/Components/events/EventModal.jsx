@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import ConfirmModal from '../common/ConfirmModal';
 
 // --- Sub-Components for Cleanliness ---
 
@@ -69,6 +70,7 @@ const EventModal = ({
         extraGuests: 0, totalPrice: 0
     });
     const [error, setError] = useState(null);
+    const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
     // Today's date in YYYY-MM-DD (used for min date constraint)
     const today = new Date().toLocaleDateString('en-CA');
@@ -131,7 +133,7 @@ const EventModal = ({
 
     const handleSave = () => {
         if (!formData.customerName || !formData.contactNumber || !formData.address || !formData.eventDate) {
-            alert("Please fill in all required fields");
+            setError("Please fill in all required fields");
             return;
         }
         if (formData.eventDate < today) {
@@ -350,9 +352,7 @@ const EventModal = ({
                             <Button
                                 variant="ghost"
                                 className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => {
-                                    if (confirm('Cancel this event?')) onCancelEvent(event.id);
-                                }}
+                                onClick={() => setCancelConfirmOpen(true)}
                             >
                                 <XCircle size={16} className="mr-2" /> Cancel Event
                             </Button>
@@ -378,6 +378,16 @@ const EventModal = ({
                 </div>
 
             </div>
+
+            <ConfirmModal
+                isOpen={cancelConfirmOpen}
+                onClose={() => setCancelConfirmOpen(false)}
+                onConfirm={() => onCancelEvent(event.id)}
+                title="Cancel Event"
+                message="Are you sure you want to cancel this event? This action cannot be undone."
+                variant="confirm"
+                confirmText="Cancel Event"
+            />
         </div>
     );
 };

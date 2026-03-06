@@ -17,6 +17,7 @@ import Select from '@/Components/employees/Select';
 import { Card } from '@/Components/employees/Card';
 import Modal from '@/Components/employees/Modal';
 import Pagination from '@/Components/employees/Pagination';
+import ConfirmModal from '@/Components/common/ConfirmModal';
 
 const ShiftModal = ({ isOpen, onClose, employee, date, locations, shiftToEdit = null }) => {
     if (!isOpen) return null;
@@ -29,6 +30,8 @@ const ShiftModal = ({ isOpen, onClose, employee, date, locations, shiftToEdit = 
         location_id: shiftToEdit?.location_id || '',
         notes: shiftToEdit?.notes || ''
     });
+
+    const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
     React.useEffect(() => {
         transform((data) => ({
@@ -62,97 +65,111 @@ const ShiftModal = ({ isOpen, onClose, employee, date, locations, shiftToEdit = 
     };
 
     const handleDelete = () => {
-        if (confirm('Are you sure you want to delete this shift?')) {
-            destroy(route('admin.schedule.destroy', shiftToEdit.id), {
-                onSuccess: () => onClose()
-            });
-        }
+        setDeleteConfirmOpen(true);
+    };
+
+    const confirmDelete = () => {
+        destroy(route('admin.schedule.destroy', shiftToEdit.id), {
+            onSuccess: () => onClose()
+        });
     };
 
     return (
-        <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
-            <div className="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
-                {employee?.name} • {date && format(date, 'MMM dd, yyyy')}
-            </div>
+        <>
+            <Modal isOpen={isOpen} onClose={onClose} title={title} maxWidth="max-w-md">
+                <div className="mb-4 text-sm text-[hsl(var(--muted-foreground))]">
+                    {employee?.name} • {date && format(date, 'MMM dd, yyyy')}
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Start Time</label>
+                            <Input
+                                type="time"
+                                value={data.start_time}
+                                onChange={e => setData('start_time', e.target.value)}
+                                required
+                            />
+                            {errors.start_time && <div className="text-[hsl(var(--destructive))] text-xs mt-1">{errors.start_time}</div>}
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">End Time</label>
+                            <Input
+                                type="time"
+                                value={data.end_time}
+                                onChange={e => setData('end_time', e.target.value)}
+                                required
+                            />
+                            {errors.end_time && <div className="text-[hsl(var(--destructive))] text-xs mt-1">{errors.end_time}</div>}
+                        </div>
+                    </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Start Time</label>
-                        <Input
-                            type="time"
-                            value={data.start_time}
-                            onChange={e => setData('start_time', e.target.value)}
-                            required
-                        />
-                        {errors.start_time && <div className="text-[hsl(var(--destructive))] text-xs mt-1">{errors.start_time}</div>}
+                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Location</label>
+                        <Select
+                            value={data.location_id}
+                            onChange={e => setData('location_id', e.target.value)}
+                        >
+                            <option value="">Select Location</option>
+                            {locations && locations.map(loc => (
+                                <option key={loc.id} value={loc.id}>{loc.name}</option>
+                            ))}
+                        </Select>
+                        {errors.location_id && <div className="text-[hsl(var(--destructive))] text-xs mt-1">{errors.location_id}</div>}
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">End Time</label>
+                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Notes (Optional)</label>
                         <Input
-                            type="time"
-                            value={data.end_time}
-                            onChange={e => setData('end_time', e.target.value)}
-                            required
+                            value={data.notes}
+                            onChange={e => setData('notes', e.target.value)}
+                            placeholder="e.g. Opening duty, Cover for [Name]"
                         />
-                        {errors.end_time && <div className="text-[hsl(var(--destructive))] text-xs mt-1">{errors.end_time}</div>}
                     </div>
-                </div>
 
-                <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Location</label>
-                    <Select
-                        value={data.location_id}
-                        onChange={e => setData('location_id', e.target.value)}
-                    >
-                        <option value="">Select Location</option>
-                        {locations && locations.map(loc => (
-                            <option key={loc.id} value={loc.id}>{loc.name}</option>
-                        ))}
-                    </Select>
-                    {errors.location_id && <div className="text-[hsl(var(--destructive))] text-xs mt-1">{errors.location_id}</div>}
-                </div>
+                    <div className="flex justify-between items-center pt-4 border-t border-[hsl(var(--border))] mt-4">
+                        {isEdit ? (
+                            <Button
+                                type="button"
+                                variant="destructive"
+                                size="icon"
+                                onClick={handleDelete}
+                                title="Delete Shift"
+                            >
+                                <Trash2 size={16} />
+                            </Button>
+                        ) : <div></div>}
 
-                <div>
-                    <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Notes (Optional)</label>
-                    <Input
-                        value={data.notes}
-                        onChange={e => setData('notes', e.target.value)}
-                        placeholder="e.g. Opening duty, Cover for [Name]"
-                    />
-                </div>
-
-                <div className="flex justify-between items-center pt-4 border-t border-[hsl(var(--border))] mt-4">
-                    {isEdit ? (
-                        <Button
-                            type="button"
-                            variant="destructive"
-                            size="icon"
-                            onClick={handleDelete}
-                            title="Delete Shift"
-                        >
-                            <Trash2 size={16} />
-                        </Button>
-                    ) : <div></div>}
-
-                    <div className="flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={processing}
-                        >
-                            {processing ? 'Saving...' : (isEdit ? 'Update Shift' : 'Add Shift')}
-                        </Button>
+                        <div className="flex gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={onClose}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={processing}
+                            >
+                                {processing ? 'Saving...' : (isEdit ? 'Update Shift' : 'Add Shift')}
+                            </Button>
+                        </div>
                     </div>
-                </div>
-            </form>
-        </Modal>
+                </form>
+            </Modal>
+
+            <ConfirmModal
+                isOpen={deleteConfirmOpen}
+                onClose={() => setDeleteConfirmOpen(false)}
+                onConfirm={confirmDelete}
+                title="Delete Shift"
+                message="Are you sure you want to delete this shift? This action cannot be undone."
+                variant="confirm"
+                confirmText="Delete"
+            />
+        </>
     );
 };
 
@@ -162,6 +179,7 @@ const Schedule = ({ shifts, employees, locations, weekStart }) => {
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedSlot, setSelectedSlot] = useState({ employee: null, date: null, shift: null });
+    const [publishConfirmOpen, setPublishConfirmOpen] = useState(false);
 
     const openModal = (employee, date, shift = null) => {
         setSelectedSlot({ employee, date, shift });
@@ -214,11 +232,7 @@ const Schedule = ({ shifts, employees, locations, weekStart }) => {
 
                     <Button
                         className="gap-2 shadow-sm"
-                        onClick={() => {
-                            if (confirm('Are you sure you want to publish the schedule for this week? Employees will be able to see their shifts.')) {
-                                router.post(route('admin.schedule.publish'), { week_start: format(startDate, 'yyyy-MM-dd') });
-                            }
-                        }}
+                        onClick={() => setPublishConfirmOpen(true)}
                     >
                         <Send size={18} /> Publish Schedule
                     </Button>
@@ -316,6 +330,16 @@ const Schedule = ({ shifts, employees, locations, weekStart }) => {
             </Card>
 
             <Pagination links={employees.links} />
+
+            <ConfirmModal
+                isOpen={publishConfirmOpen}
+                onClose={() => setPublishConfirmOpen(false)}
+                onConfirm={() => router.post(route('admin.schedule.publish'), { week_start: format(startDate, 'yyyy-MM-dd') })}
+                title="Publish Schedule"
+                message="Are you sure you want to publish the schedule for this week? Employees will be able to see their shifts."
+                variant="warning"
+                confirmText="Publish"
+            />
         </div>
     );
 };

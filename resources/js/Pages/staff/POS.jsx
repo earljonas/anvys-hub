@@ -8,6 +8,7 @@ import CustomizeModal from '../../Components/POS/CustomizeModal';
 import CartSidebar from '../../Components/POS/CartSidebar';
 import PaymentModal from '../../Components/POS/PaymentModal';
 import ReceiptModal from '../../Components/POS/ReceiptModal';
+import ConfirmModal from '../../Components/common/ConfirmModal';
 
 const POS = ({ categories, products }) => {
     const { flash } = usePage().props;
@@ -28,6 +29,11 @@ const POS = ({ categories, products }) => {
     // Payment flow state
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [showReceiptModal, setShowReceiptModal] = useState(false);
+
+    // Confirm/Alert modal state
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', variant: 'confirm', onConfirm: null });
+    const openConfirm = (opts) => setConfirmModal({ isOpen: true, ...opts });
+    const closeConfirm = () => setConfirmModal(prev => ({ ...prev, isOpen: false }));
     const [completedOrder, setCompletedOrder] = useState(null);
 
     const filteredProducts = useMemo(() => {
@@ -82,10 +88,16 @@ const POS = ({ categories, products }) => {
     };
 
     const clearCart = () => {
-        if (confirm('Are you sure you want to clear the cart?')) {
-            setCart([]);
-            setDiscount(0);
-        }
+        openConfirm({
+            title: 'Clear Cart',
+            message: 'Are you sure you want to clear the cart? All items will be removed.',
+            variant: 'warning',
+            confirmText: 'Clear',
+            onConfirm: () => {
+                setCart([]);
+                setDiscount(0);
+            },
+        });
     };
 
     const subtotal = cart.reduce((s, i) => s + (i.finalPrice * (i.quantity || 1)), 0);
@@ -133,16 +145,16 @@ const POS = ({ categories, products }) => {
             } else {
                 console.error('Payment failed:', data);
                 const msg = data.message || 'Payment failed. Please try again.';
-                alert(msg + (data.errors ? '\n' + JSON.stringify(data.errors) : ''));
+                openConfirm({ title: 'Payment Failed', message: msg, variant: 'error' });
             }
         } catch (error) {
             console.error('Payment error:', error);
             if (error.response) {
                 const data = error.response.data;
                 const msg = data.message || 'Payment failed. Please try again.';
-                alert(msg + (data.errors ? '\n' + JSON.stringify(data.errors) : ''));
+                openConfirm({ title: 'Payment Failed', message: msg, variant: 'error' });
             } else {
-                alert('Payment failed. Please check your connection.');
+                openConfirm({ title: 'Connection Error', message: 'Payment failed. Please check your connection.', variant: 'error' });
             }
         } finally {
             setIsProcessing(false);
@@ -249,6 +261,17 @@ const POS = ({ categories, products }) => {
                 onClose={() => setShowReceiptModal(false)}
                 order={completedOrder}
                 onNewOrder={handleNewOrder}
+            />
+
+            {/* Confirm / Alert Modal */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={closeConfirm}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                variant={confirmModal.variant}
+                confirmText={confirmModal.confirmText}
             />
         </div>
     );
