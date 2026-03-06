@@ -23,15 +23,15 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
 
                 <div className="overflow-y-auto p-0">
                     <table className="w-full text-left">
-                        <thead className="bg-[hsl(var(--muted))] sticky top-0">
+                        <thead className="bg-[hsl(var(--muted))] sticky top-0 z-20 shadow-sm">
                             <tr>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Time</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Item</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Action</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Qty</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">Notes</th>
-                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))]">By</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">Time</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">Item</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">Location</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">Action</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">Qty</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">Notes</th>
+                                <th className="p-4 text-sm font-semibold text-[hsl(var(--muted-foreground))] bg-[hsl(var(--muted))]">By</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[hsl(var(--border))]">
@@ -68,8 +68,8 @@ const StockLogsModal = ({ isOpen, onClose, logs = [] }) => {
                                                         </span>
                                                     </button>
                                                     {expandedNote === log.id && (
-                                                        <div className="absolute z-10 top-full left-0 mt-1 p-3 bg-white rounded-lg shadow-lg border border-[hsl(var(--border))] max-w-xs">
-                                                            <p className="text-sm text-[hsl(var(--foreground))]">{log.notes}</p>
+                                                        <div className="absolute z-30 top-full left-0 mt-1 p-3 bg-white rounded-lg shadow-xl border border-[hsl(var(--border))] max-w-xs animate-in fade-in zoom-in-95 duration-100">
+                                                            <p className="text-sm text-[hsl(var(--foreground))] whitespace-pre-wrap leading-relaxed">{log.notes}</p>
                                                         </div>
                                                     )}
                                                 </div>

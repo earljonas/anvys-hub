@@ -130,8 +130,8 @@ const EventModal = ({
     }, [formData.packageId, formData.extraGuests, packages, isView]);
 
     const handleSave = () => {
-        if (!formData.customerName || !formData.eventDate) {
-            alert("Please fill in required fields");
+        if (!formData.customerName || !formData.contactNumber || !formData.address || !formData.eventDate) {
+            alert("Please fill in all required fields");
             return;
         }
         if (formData.eventDate < today) {
@@ -204,14 +204,14 @@ const EventModal = ({
                                             />
                                         </FormField>
                                     </div>
-                                    <FormField label="Contact Number" icon={Phone} isView={isView} valueDisplay={formData.contactNumber}>
+                                    <FormField label="Contact Number" icon={Phone} isView={isView} valueDisplay={formData.contactNumber} required>
                                         <Input
                                             value={formData.contactNumber}
                                             onChange={e => setFormData({ ...formData, contactNumber: e.target.value })}
                                             placeholder="09XX XXX XXXX"
                                         />
                                     </FormField>
-                                    <FormField label="Address" icon={MapPin} isView={isView} valueDisplay={formData.address}>
+                                    <FormField label="Address" icon={MapPin} isView={isView} valueDisplay={formData.address} required>
                                         <Input
                                             value={formData.address}
                                             onChange={e => setFormData({ ...formData, address: e.target.value })}

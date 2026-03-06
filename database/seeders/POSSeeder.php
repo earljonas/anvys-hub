@@ -31,7 +31,7 @@ class POSSeeder extends Seeder
             'slug' => 'soda',
         ]);
 
-        // Ice Scramble Sizes (shared across all scramble products)
+        // Ice Scramble Sizes
         $scrambleSizes = [
             ['name' => 'Small', 'price' => 100, 'sort_order' => 1],
             ['name' => 'Medium', 'price' => 110, 'sort_order' => 2],
@@ -39,7 +39,7 @@ class POSSeeder extends Seeder
             ['name' => '1 Liter', 'price' => 200, 'sort_order' => 4],
         ];
 
-        // Create Shared Addons (Created ONCE)
+        // Create Shared Addons
         $addons = [];
         $scrambleAddonNames = [
             ['name' => 'Milk', 'price' => 10],
