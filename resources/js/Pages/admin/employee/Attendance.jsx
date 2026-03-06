@@ -339,7 +339,11 @@ const Attendance = ({ records, filters }) => {
                                 </tr>
                             ) : (
                                 filteredRecords.map((record) => (
-                                    <tr key={record.id} className="hover:bg-[hsl(var(--muted))/0.3] transition-colors group">
+                                    <tr
+                                        key={record.id}
+                                        className="hover:bg-[hsl(var(--muted))/0.3] transition-colors cursor-pointer"
+                                        onClick={() => openViewModal(record)}
+                                    >
                                         <td className="py-4 pr-4 pl-0 align-middle font-bold text-[hsl(var(--foreground))] whitespace-nowrap">
                                             {record.user.name}
                                         </td>
@@ -358,7 +362,7 @@ const Attendance = ({ records, filters }) => {
                                         <td className="py-4 px-4 align-middle">
                                             <StatusBadge status={record.status} isOngoing={!record.clock_out} />
                                         </td>
-                                        <td className="py-4 px-4 align-middle text-right">
+                                        <td className="py-4 px-4 align-middle text-right" onClick={(e) => e.stopPropagation()}>
                                             <div className="flex justify-end gap-2">
                                                 {record.status === 'pending' && record.clock_out && (
                                                     <>
@@ -382,14 +386,6 @@ const Attendance = ({ records, filters }) => {
                                                         </Button>
                                                     </>
                                                 )}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon-sm"
-                                                    title="View Details"
-                                                    onClick={() => openViewModal(record)}
-                                                >
-                                                    <Eye size={16} />
-                                                </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon-sm"

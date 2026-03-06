@@ -79,6 +79,21 @@ class PayrollController extends Controller
                     'total_hours' => (float) $total_hours,
                     'status' => $payroll->status,
                     'payment_date' => $payroll->payment_date,
+                    'is_bulk' => $payslips->count() > 1,
+                    'individual_payslips' => $payslips->map(function ($slip) {
+                        $slipDeductions = is_array($slip->deductions) ? $slip->deductions : [];
+                        return [
+                            'id' => $slip->id,
+                            'employee_name' => optional($slip->user)->name ?? 'Unknown',
+                            'hours_worked' => (float) $slip->hours_worked,
+                            'gross_pay' => (float) $slip->gross_pay,
+                            'net_pay' => (float) $slip->net_pay,
+                            'sss' => (float) ($slipDeductions['sss'] ?? 0),
+                            'philhealth' => (float) ($slipDeductions['philhealth'] ?? 0),
+                            'pagibig' => (float) ($slipDeductions['pagibig'] ?? 0),
+                            'tax' => (float) ($slipDeductions['tax'] ?? 0),
+                        ];
+                    }),
                 ];
             });
 
