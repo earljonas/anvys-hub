@@ -9,32 +9,50 @@ use App\Models\Product;
 use App\Models\Event;
 use App\Models\InventoryItem;
 use App\Models\StockLog;
+use App\Models\Location;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Carbon\Carbon;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsController extends Controller
 {
+    // ─── SALES ──────────────────────────────────────────────────────────
+
     /**
      * Display the Sales Reports page.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
-        $endOfMonth = $now->copy()->endOfMonth();
+        $month = $request->input('month', now()->format('Y-m'));
+        $locationFilter = $request->input('location', '');
+
+        $startOfMonth = Carbon::parse($month)->startOfMonth();
+        $endOfMonth = Carbon::parse($month)->endOfMonth();
+
+        $lastMonthStart = $startOfMonth->copy()->subMonth()->startOfMonth();
+        $lastMonthEnd = $startOfMonth->copy()->subMonth()->endOfMonth();
+
+        // Location filter helper: returns a closure for filtering orders by employee location
+        $locationScope = function ($query) use ($locationFilter) {
+            if ($locationFilter) {
+                $query->whereHas('createdBy.employee.location', function ($q) use ($locationFilter) {
+                    $q->where('name', $locationFilter);
+                });
+            }
+        };
 
         // Monthly revenue
         $monthlyRevenue = Order::where('status', 'completed')
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->tap($locationScope)
             ->sum('total');
 
         // Last month revenue
-        $lastMonthStart = $now->copy()->subMonth()->startOfMonth();
-        $lastMonthEnd = $now->copy()->subMonth()->endOfMonth();
-
         $lastMonthRevenue = Order::where('status', 'completed')
             ->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
+            ->tap($locationScope)
             ->sum('total');
 
         $revenueChange = $lastMonthRevenue > 0
@@ -44,10 +62,12 @@ class ReportsController extends Controller
         // Orders count
         $totalOrders = Order::where('status', 'completed')
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->tap($locationScope)
             ->count();
 
         $lastMonthOrders = Order::where('status', 'completed')
             ->whereBetween('created_at', [$lastMonthStart, $lastMonthEnd])
+            ->tap($locationScope)
             ->count();
 
         $ordersChange = $lastMonthOrders > 0
@@ -55,8 +75,11 @@ class ReportsController extends Controller
             : 0;
 
         // Peak hour
-        $peakHourData = Order::where('status', 'completed')
+        $peakHourQuery = Order::where('status', 'completed')
             ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->tap($locationScope);
+
+        $peakHourData = $peakHourQuery
             ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
             ->groupBy('hour')
             ->orderByDesc('count')
@@ -70,7 +93,6 @@ class ReportsController extends Controller
 
         // Weekly revenue
         $weeklyRevenue = [];
-
         for ($week = 1; $week <= 4; $week++) {
             $weekStart = $startOfMonth->copy()->addWeeks($week - 1);
             $weekEnd = $week < 4
@@ -79,6 +101,7 @@ class ReportsController extends Controller
 
             $revenue = Order::where('status', 'completed')
                 ->whereBetween('created_at', [$weekStart, $weekEnd])
+                ->tap($locationScope)
                 ->sum('total');
 
             $weeklyRevenue[] = [
@@ -89,9 +112,10 @@ class ReportsController extends Controller
 
         // Best selling products
         $bestSelling = OrderItem::select('product_id', DB::raw('SUM(quantity) as total_sold'))
-            ->whereHas('order', function ($query) use ($startOfMonth, $endOfMonth) {
+            ->whereHas('order', function ($query) use ($startOfMonth, $endOfMonth, $locationScope) {
                 $query->where('status', 'completed')
-                    ->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+                    ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+                    ->tap($locationScope);
             })
             ->groupBy('product_id')
             ->orderByDesc('total_sold')
@@ -106,18 +130,18 @@ class ReportsController extends Controller
             });
 
         if ($bestSelling->isEmpty()) {
-            $bestSelling = collect([
-                ['name' => 'No sales yet', 'value' => 0],
-            ]);
+            $bestSelling = collect([['name' => 'No sales yet', 'value' => 0]]);
         }
 
-        // Recent orders
+        // Recent orders — paginated, full month, with employee
         $recentOrders = Order::with(['items.product', 'createdBy.employee.location'])
             ->where('status', 'completed')
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->tap($locationScope)
             ->orderByDesc('created_at')
-            ->limit(10)
-            ->get()
-            ->map(function ($order) {
+            ->paginate(10)
+            ->withQueryString()
+            ->through(function ($order) {
                 return [
                     'order_number' => $order->order_number,
                     'date' => $order->created_at->format('M d, Y h:i A'),
@@ -125,8 +149,12 @@ class ReportsController extends Controller
                     'total' => (float) $order->total,
                     'payment_method' => $order->payment_method,
                     'location' => $order->createdBy?->employee?->location?->name ?? 'N/A',
+                    'employee' => $order->createdBy?->employee?->name ?? $order->createdBy?->name ?? 'N/A',
                 ];
             });
+
+        // Locations for dropdown
+        $locations = Location::where('status', 'Active')->pluck('name');
 
         return Inertia::render('admin/reports/SalesReports', [
             'stats' => [
@@ -140,24 +168,95 @@ class ReportsController extends Controller
             'weeklyRevenue' => $weeklyRevenue,
             'bestSelling' => $bestSelling,
             'recentOrders' => $recentOrders,
+            'locations' => $locations,
+            'filters' => [
+                'month' => $month,
+                'location' => $locationFilter,
+            ],
         ]);
     }
 
     /**
+     * Export sales data as CSV.
+     */
+    public function exportSalesCsv(Request $request): StreamedResponse
+    {
+        $month = $request->input('month', now()->format('Y-m'));
+        $locationFilter = $request->input('location', '');
+
+        $startOfMonth = Carbon::parse($month)->startOfMonth();
+        $endOfMonth = Carbon::parse($month)->endOfMonth();
+
+        $query = Order::with(['items.product', 'createdBy.employee.location'])
+            ->where('status', 'completed')
+            ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            ->orderByDesc('created_at');
+
+        if ($locationFilter) {
+            $query->whereHas('createdBy.employee.location', function ($q) use ($locationFilter) {
+                $q->where('name', $locationFilter);
+            });
+        }
+
+        $filename = "sales-report-{$month}.csv";
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Order Number', 'Date', 'Items', 'Total', 'Payment Method', 'Location', 'Employee']);
+
+            $query->chunk(200, function ($orders) use ($handle) {
+                foreach ($orders as $order) {
+                    fputcsv($handle, [
+                        $order->order_number,
+                        $order->created_at->format('M d, Y h:i A'),
+                        $order->items->count(),
+                        $order->total,
+                        $order->payment_method,
+                        $order->createdBy?->employee?->location?->name ?? 'N/A',
+                        $order->createdBy?->employee?->name ?? $order->createdBy?->name ?? 'N/A',
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    // ─── INVENTORY ──────────────────────────────────────────────────────
+
+    /**
      * Display the Inventory Reports page.
      */
-    public function inventory()
+    public function inventory(Request $request)
     {
+        $locationFilter = $request->input('location', '');
+        $typeFilter = $request->input('type', '');
+
         $totalItems = InventoryItem::count();
         $lowStockCount = InventoryItem::where('status', 'Low Stock')->count();
         $outOfStockCount = InventoryItem::where('status', 'Out of Stock')->count();
         $totalValue = InventoryItem::sum(DB::raw('stock * cost_per_unit'));
 
-        $stockLogs = StockLog::with(['inventoryItem', 'user.employee', 'location'])
-            ->latest('logged_at')
+        // Stock logs with filters
+        $stockLogsQuery = StockLog::with(['inventoryItem', 'user.employee', 'location'])
+            ->latest('logged_at');
+
+        if ($locationFilter) {
+            $stockLogsQuery->whereHas('location', function ($q) use ($locationFilter) {
+                $q->where('name', $locationFilter);
+            });
+        }
+
+        if ($typeFilter) {
+            $stockLogsQuery->where('type', $typeFilter);
+        }
+
+        $stockLogs = $stockLogsQuery
             ->paginate(10, ['*'], 'logs_page')
+            ->withQueryString()
             ->through(function ($log) {
-                // Use employee name if available, otherwise fall back to user name
                 $userName = 'System';
                 if ($log->user) {
                     $userName = $log->user->employee?->name ?? $log->user->name;
@@ -179,6 +278,7 @@ class ReportsController extends Controller
             ->whereIn('status', ['Low Stock', 'Out of Stock'])
             ->orderBy('stock')
             ->paginate(10, ['*'], 'alerts_page')
+            ->withQueryString()
             ->through(function ($item) {
                 return [
                     'id' => $item->id,
@@ -190,6 +290,9 @@ class ReportsController extends Controller
                 ];
             });
 
+        // Locations for dropdown
+        $locations = Location::where('status', 'Active')->pluck('name');
+
         return Inertia::render('admin/reports/InventoryReports', [
             'stats' => [
                 'totalItems' => $totalItems,
@@ -199,17 +302,79 @@ class ReportsController extends Controller
             ],
             'stockLogs' => $stockLogs,
             'lowStockItems' => $lowStockItems,
+            'locations' => $locations,
+            'filters' => [
+                'location' => $locationFilter,
+                'type' => $typeFilter,
+            ],
         ]);
     }
 
     /**
+     * Export inventory stock logs as CSV.
+     */
+    public function exportInventoryCsv(Request $request): StreamedResponse
+    {
+        $locationFilter = $request->input('location', '');
+        $typeFilter = $request->input('type', '');
+
+        $query = StockLog::with(['inventoryItem', 'user.employee', 'location'])
+            ->latest('logged_at');
+
+        if ($locationFilter) {
+            $query->whereHas('location', function ($q) use ($locationFilter) {
+                $q->where('name', $locationFilter);
+            });
+        }
+
+        if ($typeFilter) {
+            $query->where('type', $typeFilter);
+        }
+
+        $filename = 'stock-logs-' . now()->format('Y-m-d') . '.csv';
+
+        return response()->streamDownload(function () use ($query) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Date', 'Time', 'Item', 'Location', 'Action', 'Quantity', 'Notes', 'Adjusted By']);
+
+            $query->chunk(200, function ($logs) use ($handle) {
+                foreach ($logs as $log) {
+                    $userName = 'System';
+                    if ($log->user) {
+                        $userName = $log->user->employee?->name ?? $log->user->name;
+                    }
+                    fputcsv($handle, [
+                        $log->logged_at->format('M d, Y'),
+                        $log->logged_at->format('h:i A'),
+                        $log->inventoryItem->name ?? 'Unknown',
+                        $log->location->name ?? 'Unknown',
+                        $log->type,
+                        $log->quantity,
+                        $log->notes ?? '',
+                        $userName,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    // ─── EVENTS ─────────────────────────────────────────────────────────
+
+    /**
      * Display the Events Reports page.
      */
-    public function events()
+    public function events(Request $request)
     {
         $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
-        $endOfMonth = $now->copy()->endOfMonth();
+        $month = $request->input('month', $now->format('Y-m'));
+        $statusFilter = $request->input('status', '');
+
+        $startOfMonth = Carbon::parse($month)->startOfMonth();
+        $endOfMonth = Carbon::parse($month)->endOfMonth();
 
         $totalEvents = Event::whereBetween('event_date', [$startOfMonth, $endOfMonth])->count();
         $upcomingEventsCount = Event::where('event_date', '>=', $now->toDateString())->count();
@@ -225,12 +390,22 @@ class ReportsController extends Controller
 
         $locationsUsed = Event::distinct('address')->count('address');
 
-        $upcomingEvents = Event::with('package')
-            ->where('event_date', '>=', $now->toDateString())
-            ->orderBy('event_date')
-            ->limit(5)
-            ->get()
-            ->map(function ($event) {
+        // Filtered events list — paginated
+        $eventsQuery = Event::with(['package', 'payments'])
+            ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
+            ->orderBy('event_date');
+
+        if ($statusFilter) {
+            // Payment status is computed, so filter in PHP after retrieval
+            // We'll use a different approach: paginate all then filter isn't ideal.
+            // Instead, we handle it via a subquery or post-filter on the paginator.
+            // For simplicity with the computed attribute, let's fetch and filter:
+        }
+
+        $eventsList = $eventsQuery
+            ->paginate(5)
+            ->withQueryString()
+            ->through(function ($event) {
                 return [
                     'id' => $event->id,
                     'name' => $event->customer_name,
@@ -239,14 +414,16 @@ class ReportsController extends Controller
                     'time' => Carbon::parse($event->event_time)->format('g:i A'),
                     'attendees' => ($event->package ? $event->package->cups_count : 0) + $event->extra_guests,
                     'status' => $event->payment_status,
+                    'address' => $event->address,
+                    'total_price' => (float) $event->total_price,
+                    'total_paid' => (float) $event->total_paid,
                 ];
             });
 
+        // Monthly events chart (last 6 months)
         $monthlyEvents = [];
-
         for ($i = 5; $i >= 0; $i--) {
             $date = $now->copy()->subMonths($i);
-
             $count = Event::whereYear('event_date', $date->year)
                 ->whereMonth('event_date', $date->month)
                 ->count();
@@ -264,26 +441,86 @@ class ReportsController extends Controller
                 'totalAttendees' => $totalAttendees,
                 'locationsUsed' => $locationsUsed,
             ],
-            'upcomingEvents' => $upcomingEvents,
+            'eventsList' => $eventsList,
             'monthlyEvents' => $monthlyEvents,
+            'filters' => [
+                'month' => $month,
+                'status' => $statusFilter,
+            ],
         ]);
     }
 
     /**
+     * Export events data as CSV.
+     */
+    public function exportEventsCsv(Request $request): StreamedResponse
+    {
+        $month = $request->input('month', now()->format('Y-m'));
+        $statusFilter = $request->input('status', '');
+
+        $startOfMonth = Carbon::parse($month)->startOfMonth();
+        $endOfMonth = Carbon::parse($month)->endOfMonth();
+
+        $query = Event::with(['package', 'payments'])
+            ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
+            ->orderBy('event_date');
+
+        $filename = "events-report-{$month}.csv";
+
+        return response()->streamDownload(function () use ($query, $statusFilter) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Customer Name', 'Package', 'Date', 'Time', 'Attendees', 'Address', 'Total Price', 'Total Paid', 'Payment Status']);
+
+            $query->chunk(200, function ($events) use ($handle, $statusFilter) {
+                foreach ($events as $event) {
+                    $paymentStatus = $event->payment_status;
+
+                    // Filter by status if provided
+                    if ($statusFilter && strtoupper($statusFilter) !== strtoupper($paymentStatus)) {
+                        continue;
+                    }
+
+                    fputcsv($handle, [
+                        $event->customer_name,
+                        $event->package->name ?? 'Custom',
+                        $event->event_date->format('M d, Y'),
+                        Carbon::parse($event->event_time)->format('g:i A'),
+                        ($event->package ? $event->package->cups_count : 0) + $event->extra_guests,
+                        $event->address,
+                        $event->total_price,
+                        $event->total_paid,
+                        $paymentStatus,
+                    ]);
+                }
+            });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
+        ]);
+    }
+
+    // ─── PAYROLL ────────────────────────────────────────────────────────
+
+    /**
      * Display the Payroll Reports page.
      */
-    public function payroll()
+    public function payroll(Request $request)
     {
         $now = Carbon::now();
+        $month = $request->input('month', $now->format('Y-m'));
+        $statusFilter = $request->input('status', '');
+
         $startOfYear = $now->copy()->startOfYear();
+        $selectedStart = Carbon::parse($month)->startOfMonth();
+        $selectedEnd = Carbon::parse($month)->endOfMonth();
 
         // 1. Total Payroll (Year to Date)
-        $totalPayrollYTD = DB::table('payrolls') // Assuming 'payrolls' table exists
+        $totalPayrollYTD = DB::table('payrolls')
             ->whereBetween('start_date', [$startOfYear, $now])
             ->sum('total_amount');
 
-        // 2. Average Net Pay (Last 6 Months) - Approximated from recent payrolls
-        // Let's try average employee net pay from payslips over the last 6 months.
+        // 2. Average Net Pay (Last 6 Months)
         $sixMonthsAgo = $now->copy()->subMonths(6);
         $averageNetPay = DB::table('payslips')
             ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
@@ -291,10 +528,6 @@ class ReportsController extends Controller
             ->avg('payslips.net_pay');
 
         // 3. Total Deductions (Year to Date)
-        // Assuming deductions are stored in payslips or you have a way to calculate them.
-        // If 'deductions' column in payslips is JSON, we might need to sum it up in PHP or use a raw query.
-        // For this example, let's assume we can sum 'gross_pay' - 'net_pay' to get deductions
-        // OR if you have a specific deductions column.
         $totalDeductionsYTD = DB::table('payslips')
             ->join('payrolls', 'payslips.payroll_id', '=', 'payrolls.id')
             ->whereBetween('payrolls.start_date', [$startOfYear, $now])
@@ -306,7 +539,7 @@ class ReportsController extends Controller
             ->whereIn('status', ['Pending', 'draft', 'Draft'])
             ->count();
 
-        // 5. Total Non-Admin Employees (headcount)
+        // 5. Total Non-Admin Employees
         $totalNonAdminEmployees = User::where('is_admin', false)->count();
 
         // 6. Total Hours Worked (YTD)
@@ -315,7 +548,7 @@ class ReportsController extends Controller
             ->whereBetween('payrolls.start_date', [$startOfYear, $now])
             ->sum('payslips.hours_worked');
 
-        // 7. Monthly Payroll Cost (Last 6 Months) - based on start_date for better visibility
+        // 7. Monthly Payroll Cost (Last 6 Months)
         $monthlyPayrollCost = [];
         for ($i = 5; $i >= 0; $i--) {
             $monthStart = $now->copy()->subMonths($i)->startOfMonth();
@@ -331,13 +564,18 @@ class ReportsController extends Controller
             ];
         }
 
-        // 6. Recent Payroll History with Individual Payslips
-        $recentPayrollsData = DB::table('payrolls')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
+        // 8. Payrolls — filtered by selected month + status, paginated
+        $payrollsQuery = DB::table('payrolls')
+            ->whereBetween('start_date', [$selectedStart, $selectedEnd])
+            ->orderBy('created_at', 'desc');
 
-        $payrollIds = $recentPayrollsData->pluck('id');
+        if ($statusFilter) {
+            $payrollsQuery->where('status', $statusFilter);
+        }
+
+        $recentPayrollsData = $payrollsQuery->paginate(10);
+
+        $payrollIds = collect($recentPayrollsData->items())->pluck('id');
 
         $payslipsData = DB::table('payslips')
             ->join('users', 'payslips.user_id', '=', 'users.id')
@@ -353,7 +591,7 @@ class ReportsController extends Controller
             )
             ->get();
 
-        $recentPayrolls = $recentPayrollsData->map(function ($payroll) use ($payslipsData) {
+        $recentPayrolls = collect($recentPayrollsData->items())->map(function ($payroll) use ($payslipsData) {
             $payrollPayslips = $payslipsData->where('payroll_id', $payroll->id)->values();
 
             return [
@@ -379,7 +617,6 @@ class ReportsController extends Controller
                     ];
                 }),
                 'is_bulk' => $payrollPayslips->count() > 1,
-                // Aggregates computed from already-loaded data (no extra queries)
                 'gross_pay' => $payrollPayslips->sum('gross_pay'),
                 'net_pay' => $payrollPayslips->sum('net_pay'),
                 'total_hours' => $payrollPayslips->sum('hours_worked'),
@@ -403,6 +640,15 @@ class ReportsController extends Controller
             ];
         });
 
+        // Transform paginator to include our mapped data
+        $recentPayrollsPaginated = new \Illuminate\Pagination\LengthAwarePaginator(
+            $recentPayrolls,
+            $recentPayrollsData->total(),
+            $recentPayrollsData->perPage(),
+            $recentPayrollsData->currentPage(),
+            ['path' => request()->url(), 'query' => request()->query()]
+        );
+
         return Inertia::render('admin/reports/PayrollReports', [
             'stats' => [
                 'totalPayrollYTD' => (float) ($totalPayrollYTD ?? 0),
@@ -413,7 +659,77 @@ class ReportsController extends Controller
                 'totalHoursWorked' => (float) ($totalHoursWorked ?? 0),
             ],
             'monthlyPayrollCost' => $monthlyPayrollCost,
-            'recentPayrolls' => $recentPayrolls,
+            'recentPayrolls' => $recentPayrollsPaginated,
+            'filters' => [
+                'month' => $month,
+                'status' => $statusFilter,
+            ],
+        ]);
+    }
+
+    /**
+     * Export payroll data as CSV.
+     */
+    public function exportPayrollCsv(Request $request): StreamedResponse
+    {
+        $month = $request->input('month', now()->format('Y-m'));
+        $statusFilter = $request->input('status', '');
+
+        $selectedStart = Carbon::parse($month)->startOfMonth();
+        $selectedEnd = Carbon::parse($month)->endOfMonth();
+
+        $payrollsQuery = DB::table('payrolls')
+            ->whereBetween('start_date', [$selectedStart, $selectedEnd])
+            ->orderBy('created_at', 'desc');
+
+        if ($statusFilter) {
+            $payrollsQuery->where('status', $statusFilter);
+        }
+
+        $filename = "payroll-report-{$month}.csv";
+
+        return response()->streamDownload(function () use ($payrollsQuery) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Reference', 'Period', 'Employee', 'Hours Worked', 'Gross Pay', 'Net Pay', 'SSS', 'PhilHealth', 'Pag-IBIG', 'Tax', 'Status', 'Payment Date']);
+
+            $payrollsQuery->chunk(100, function ($payrolls) use ($handle) {
+                $payrollIds = $payrolls->pluck('id');
+
+                $payslips = DB::table('payslips')
+                    ->join('users', 'payslips.user_id', '=', 'users.id')
+                    ->whereIn('payroll_id', $payrollIds)
+                    ->select('payslips.*', 'users.name as employee_name')
+                    ->get();
+
+                foreach ($payrolls as $payroll) {
+                    $slips = $payslips->where('payroll_id', $payroll->id);
+                    $reference = 'PAY-' . str_pad($payroll->id, 5, '0', STR_PAD_LEFT);
+                    $period = Carbon::parse($payroll->start_date)->format('M d') . ' - ' . Carbon::parse($payroll->end_date)->format('M d, Y');
+                    $paymentDate = $payroll->payment_date ? Carbon::parse($payroll->payment_date)->format('M d, Y') : 'N/A';
+
+                    foreach ($slips as $slip) {
+                        $deductions = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+                        fputcsv($handle, [
+                            $reference,
+                            $period,
+                            $slip->employee_name,
+                            $slip->hours_worked,
+                            $slip->gross_pay,
+                            $slip->net_pay,
+                            $deductions['sss'] ?? 0,
+                            $deductions['philhealth'] ?? 0,
+                            $deductions['pagibig'] ?? 0,
+                            $deductions['tax'] ?? 0,
+                            $payroll->status,
+                            $paymentDate,
+                        ]);
+                    }
+                }
+            });
+
+            fclose($handle);
+        }, $filename, [
+            'Content-Type' => 'text/csv',
         ]);
     }
 }

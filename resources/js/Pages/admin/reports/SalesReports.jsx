@@ -1,13 +1,17 @@
 import React from 'react';
+import { router } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Download, TrendingUp, ShoppingBag, Clock, ReceiptText } from 'lucide-react';
+import { Download, TrendingUp, ShoppingBag, Clock, ReceiptText, Filter } from 'lucide-react';
 import Button from '@/Components/common/Button';
 import StatCard from '@/Components/reports/StatCard';
+import Pagination from '@/Components/common/Pagination';
 
-const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
-    // Calculate max value for chart scaling
+const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders, locations = [], filters = {} }) => {
     const maxWeeklyRevenue = Math.max(...weeklyRevenue.map(w => w.value), 1);
     const maxBestSelling = Math.max(...bestSelling.map(b => b.value), 1);
+
+    const currentMonth = filters.month || new Date().toISOString().slice(0, 7);
+    const currentLocation = filters.location || '';
 
     const formatCurrency = (value) => {
         return new Intl.NumberFormat('en-PH', {
@@ -18,31 +22,29 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
         }).format(value);
     };
 
-    const exportToCSV = () => {
-        // Create CSV content from recent orders
-        const headers = ['Order Number', 'Date', 'Items', 'Total', 'Payment Method', 'Location'];
-        const rows = recentOrders.map(order => [
-            order.order_number,
-            order.date,
-            order.items_count,
-            order.total.toFixed(2),
-            order.payment_method,
-            order.location,
-        ]);
-
-        const csvContent = [
-            headers.join(','),
-            ...rows.map(row => row.join(','))
-        ].join('\n');
-
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `sales-report-${new Date().toISOString().split('T')[0]}.csv`;
-        a.click();
-        window.URL.revokeObjectURL(url);
+    const handleFilterChange = (key, value) => {
+        const newFilters = { ...filters, [key]: value };
+        // Remove empty values
+        Object.keys(newFilters).forEach(k => {
+            if (!newFilters[k]) delete newFilters[k];
+        });
+        router.get('/admin/reports/sales', newFilters, {
+            preserveState: true,
+            preserveScroll: true,
+        });
     };
+
+    const exportToCSV = () => {
+        const params = new URLSearchParams();
+        if (currentMonth) params.set('month', currentMonth);
+        if (currentLocation) params.set('location', currentLocation);
+        window.open(`/admin/reports/sales/export?${params.toString()}`, '_blank');
+    };
+
+    // Get readable month label
+    const monthLabel = new Date(currentMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const orders = recentOrders?.data || recentOrders || [];
 
     return (
         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 p-5 space-y-6">
@@ -50,10 +52,46 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Reports & Analytics</h1>
+                    <p className="text-sm text-[hsl(var(--muted-foreground))] mt-1">{monthLabel}</p>
                 </div>
                 <Button variant="primary" className="flex items-center gap-2 shadow-lg shadow-pink-500/20 cursor-pointer" onClick={exportToCSV}>
                     <Download size={18} /> Export CSV
                 </Button>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-4 shadow-sm">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-[hsl(var(--muted-foreground))]">
+                        <Filter size={16} /> Filters
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                        <input
+                            type="month"
+                            value={currentMonth}
+                            onChange={(e) => handleFilterChange('month', e.target.value)}
+                            className="px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all cursor-pointer"
+                        />
+                        <select
+                            value={currentLocation}
+                            onChange={(e) => handleFilterChange('location', e.target.value)}
+                            className="px-3 py-2 text-sm rounded-lg border border-[hsl(var(--border))] bg-white focus:ring-2 focus:ring-[hsl(var(--primary))]/20 focus:border-[hsl(var(--primary))] outline-none transition-all cursor-pointer"
+                        >
+                            <option value="">All Locations</option>
+                            {locations.map(loc => (
+                                <option key={loc} value={loc}>{loc}</option>
+                            ))}
+                        </select>
+                    </div>
+                    {(currentLocation) && (
+                        <button
+                            onClick={() => handleFilterChange('location', '')}
+                            className="text-xs text-[hsl(var(--primary))] hover:underline cursor-pointer"
+                        >
+                            Clear filters
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Top Stats Cards */}
@@ -110,7 +148,7 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
 
                 {/* Weekly Revenue (This Month) */}
                 <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
-                    <h3 className="text-lg font-bold text-[hsl(var(--foreground))] mb-6">Weekly Revenue (This Month)</h3>
+                    <h3 className="text-lg font-bold text-[hsl(var(--foreground))] mb-6">Weekly Revenue ({monthLabel})</h3>
                     <div className="h-[300px] w-full relative">
                         {/* Y-Axis Labels */}
                         <div className="absolute left-0 top-0 bottom-6 w-12 flex flex-col justify-between text-xs text-[hsl(var(--muted-foreground))]">
@@ -154,56 +192,59 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders }) => {
             {/* Recent Orders Table */}
             <div className="bg-[hsl(var(--card))] rounded-xl border border-[hsl(var(--border))] p-6 shadow-sm">
                 <h3 className="text-lg font-bold text-[hsl(var(--foreground))] mb-4 flex items-center gap-2">
-                    <ReceiptText size={20} /> Recent Orders
+                    <ReceiptText size={20} /> Orders — {monthLabel}
                 </h3>
-                {recentOrders.length > 0 ? (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b border-[hsl(var(--border))]">
-                                    <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Order #</th>
-                                    <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Date</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Items</th>
-                                    <th className="text-right py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Total</th>
-                                    <th className="text-center py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Payment</th>
-                                    <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {recentOrders.map((order, idx) => (
-                                    <tr key={idx} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
-                                        <td className="py-3 px-2 font-mono font-medium">{order.order_number}</td>
-                                        <td className="py-3 px-2 text-[hsl(var(--muted-foreground))]">{order.date}</td>
-                                        <td className="py-3 px-2 text-center">{order.items_count}</td>
-                                        <td className="py-3 px-2 text-right font-semibold">₱{order.total.toFixed(2)}</td>
-                                        <td className="py-3 px-2 text-center">
-                                            <span className={`
-                                                px-2 py-1 rounded-full text-xs font-medium capitalize
-                                                ${order.payment_method === 'cash' ? 'bg-green-100 text-green-700' :
-                                                    order.payment_method === 'card' ? 'bg-blue-100 text-blue-700' :
-                                                        'bg-purple-100 text-purple-700'}
-                                            `}>
-                                                {order.payment_method}
-                                            </span>
-                                        </td>
-                                        <td className="py-3 px-2 text-[hsl(var(--muted-foreground))] text-xs">{order.location}</td>
+                {orders.length > 0 ? (
+                    <>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-[hsl(var(--border))]">
+                                        <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Order #</th>
+                                        <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Date</th>
+                                        <th className="text-center py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Items</th>
+                                        <th className="text-right py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Total</th>
+                                        <th className="text-center py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Payment</th>
+                                        <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Location</th>
+                                        <th className="text-left py-3 px-2 font-semibold text-[hsl(var(--muted-foreground))]">Employee</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                </thead>
+                                <tbody>
+                                    {orders.map((order, idx) => (
+                                        <tr key={idx} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
+                                            <td className="py-3 px-2 font-mono font-medium">{order.order_number}</td>
+                                            <td className="py-3 px-2 text-[hsl(var(--muted-foreground))]">{order.date}</td>
+                                            <td className="py-3 px-2 text-center">{order.items_count}</td>
+                                            <td className="py-3 px-2 text-right font-semibold">₱{order.total.toFixed(2)}</td>
+                                            <td className="py-3 px-2 text-center">
+                                                <span className={`
+                                                    px-2 py-1 rounded-full text-xs font-medium capitalize
+                                                    ${order.payment_method === 'cash' ? 'bg-green-100 text-green-700' :
+                                                        order.payment_method === 'card' ? 'bg-blue-100 text-blue-700' :
+                                                            'bg-purple-100 text-purple-700'}
+                                                `}>
+                                                    {order.payment_method}
+                                                </span>
+                                            </td>
+                                            <td className="py-3 px-2 text-[hsl(var(--muted-foreground))] text-xs">{order.location}</td>
+                                            <td className="py-3 px-2 text-[hsl(var(--muted-foreground))] text-xs">{order.employee}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <Pagination links={recentOrders.links} />
+                    </>
                 ) : (
                     <div className="text-center py-8 text-[hsl(var(--muted-foreground))]">
                         <ReceiptText size={48} className="mx-auto mb-2 opacity-30" />
-                        <p>No orders yet. Complete some sales in the POS to see data here.</p>
+                        <p>No orders found for {monthLabel}.</p>
                     </div>
                 )}
             </div>
         </div>
     );
 };
-
-
 
 SalesReports.layout = page => <AdminLayout>{page}</AdminLayout>;
 
