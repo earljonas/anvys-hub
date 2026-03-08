@@ -18,6 +18,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportsController extends Controller
 {
+    /**
+     * Parse the Y-m string into a valid Carbon instance.
+     * Falls back to the current month if invalid.
+     */
+    private function parseMonthSafe(&$month)
+    {
+        try {
+            return Carbon::createFromFormat('Y-m', $month);
+        } catch (\Exception $e) {
+            $month = now()->format('Y-m');
+            return Carbon::createFromFormat('Y-m', $month);
+        }
+    }
+
     // ─── SALES ──────────────────────────────────────────────────────────
 
     /**
@@ -28,8 +42,9 @@ class ReportsController extends Controller
         $month = $request->input('month', now()->format('Y-m'));
         $locationFilter = $request->input('location', '');
 
-        $startOfMonth = Carbon::parse($month)->startOfMonth();
-        $endOfMonth = Carbon::parse($month)->endOfMonth();
+        $parsedDate = $this->parseMonthSafe($month);
+        $startOfMonth = $parsedDate->copy()->startOfMonth();
+        $endOfMonth = $parsedDate->copy()->endOfMonth();
 
         $lastMonthStart = $startOfMonth->copy()->subMonth()->startOfMonth();
         $lastMonthEnd = $startOfMonth->copy()->subMonth()->endOfMonth();
@@ -184,8 +199,9 @@ class ReportsController extends Controller
         $month = $request->input('month', now()->format('Y-m'));
         $locationFilter = $request->input('location', '');
 
-        $startOfMonth = Carbon::parse($month)->startOfMonth();
-        $endOfMonth = Carbon::parse($month)->endOfMonth();
+        $parsedDate = $this->parseMonthSafe($month);
+        $startOfMonth = $parsedDate->copy()->startOfMonth();
+        $endOfMonth = $parsedDate->copy()->endOfMonth();
 
         $query = Order::with(['items.product', 'createdBy.employee.location'])
             ->where('status', 'completed')
@@ -274,9 +290,17 @@ class ReportsController extends Controller
                 ];
             });
 
-        $lowStockItems = InventoryItem::with('location')
+        $lowStockQuery = InventoryItem::with('location')
             ->whereIn('status', ['Low Stock', 'Out of Stock'])
-            ->orderBy('stock')
+            ->orderBy('stock');
+
+        if ($locationFilter) {
+            $lowStockQuery->whereHas('location', function ($q) use ($locationFilter) {
+                $q->where('name', $locationFilter);
+            });
+        }
+
+        $lowStockItems = $lowStockQuery
             ->paginate(10, ['*'], 'alerts_page')
             ->withQueryString()
             ->through(function ($item) {
@@ -373,8 +397,9 @@ class ReportsController extends Controller
         $month = $request->input('month', $now->format('Y-m'));
         $statusFilter = $request->input('status', '');
 
-        $startOfMonth = Carbon::parse($month)->startOfMonth();
-        $endOfMonth = Carbon::parse($month)->endOfMonth();
+        $parsedDate = $this->parseMonthSafe($month);
+        $startOfMonth = $parsedDate->copy()->startOfMonth();
+        $endOfMonth = $parsedDate->copy()->endOfMonth();
 
         $totalEvents = Event::whereBetween('event_date', [$startOfMonth, $endOfMonth])->count();
         $upcomingEventsCount = Event::where('event_date', '>=', $now->toDateString())->count();
@@ -395,16 +420,16 @@ class ReportsController extends Controller
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
             ->orderBy('event_date');
 
+        $eventsData = $eventsQuery->paginate(5)->withQueryString();
+
         if ($statusFilter) {
-            // Payment status is computed, so filter in PHP after retrieval
-            // We'll use a different approach: paginate all then filter isn't ideal.
-            // Instead, we handle it via a subquery or post-filter on the paginator.
-            // For simplicity with the computed attribute, let's fetch and filter:
+            $filtered = collect($eventsData->items())->filter(function ($event) use ($statusFilter) {
+                return strtolower($event->payment_status) === strtolower($statusFilter);
+            })->values();
+            $eventsData->setCollection($filtered);
         }
 
-        $eventsList = $eventsQuery
-            ->paginate(5)
-            ->withQueryString()
+        $eventsList = $eventsData
             ->through(function ($event) {
                 return [
                     'id' => $event->id,
@@ -458,8 +483,9 @@ class ReportsController extends Controller
         $month = $request->input('month', now()->format('Y-m'));
         $statusFilter = $request->input('status', '');
 
-        $startOfMonth = Carbon::parse($month)->startOfMonth();
-        $endOfMonth = Carbon::parse($month)->endOfMonth();
+        $parsedDate = $this->parseMonthSafe($month);
+        $startOfMonth = $parsedDate->copy()->startOfMonth();
+        $endOfMonth = $parsedDate->copy()->endOfMonth();
 
         $query = Event::with(['package', 'payments'])
             ->whereBetween('event_date', [$startOfMonth, $endOfMonth])
@@ -512,8 +538,9 @@ class ReportsController extends Controller
         $statusFilter = $request->input('status', '');
 
         $startOfYear = $now->copy()->startOfYear();
-        $selectedStart = Carbon::parse($month)->startOfMonth();
-        $selectedEnd = Carbon::parse($month)->endOfMonth();
+        $parsedDate = $this->parseMonthSafe($month);
+        $selectedStart = $parsedDate->copy()->startOfMonth();
+        $selectedEnd = $parsedDate->copy()->endOfMonth();
 
         // 1. Total Payroll (Year to Date)
         $totalPayrollYTD = DB::table('payrolls')
@@ -570,7 +597,7 @@ class ReportsController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($statusFilter) {
-            $payrollsQuery->where('status', $statusFilter);
+            $payrollsQuery->whereRaw('LOWER(status) = ?', [strtolower($statusFilter)]);
         }
 
         $recentPayrollsData = $payrollsQuery->paginate(10);
@@ -594,6 +621,10 @@ class ReportsController extends Controller
         $recentPayrolls = collect($recentPayrollsData->items())->map(function ($payroll) use ($payslipsData) {
             $payrollPayslips = $payslipsData->where('payroll_id', $payroll->id)->values();
 
+            $payrollPayslips->each(function ($slip) {
+                $slip->parsed_deductions = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
+            });
+
             return [
                 'id' => $payroll->id,
                 'reference' => 'PAY-' . str_pad($payroll->id, 5, '0', STR_PAD_LEFT),
@@ -603,17 +634,16 @@ class ReportsController extends Controller
                 'status' => $payroll->status,
                 'date' => $payroll->payment_date ? Carbon::parse($payroll->payment_date)->format('M d, Y') : 'N/A',
                 'individual_payslips' => $payrollPayslips->map(function ($slip) {
-                    $deductions = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
                     return [
                         'id' => $slip->id,
                         'employee_name' => $slip->employee_name,
                         'hours_worked' => $slip->hours_worked,
                         'gross_pay' => $slip->gross_pay,
                         'net_pay' => $slip->net_pay,
-                        'sss' => (float) ($deductions['sss'] ?? 0),
-                        'philhealth' => (float) ($deductions['philhealth'] ?? 0),
-                        'pagibig' => (float) ($deductions['pagibig'] ?? 0),
-                        'tax' => (float) ($deductions['tax'] ?? 0),
+                        'sss' => (float) ($slip->parsed_deductions['sss'] ?? 0),
+                        'philhealth' => (float) ($slip->parsed_deductions['philhealth'] ?? 0),
+                        'pagibig' => (float) ($slip->parsed_deductions['pagibig'] ?? 0),
+                        'tax' => (float) ($slip->parsed_deductions['tax'] ?? 0),
                     ];
                 }),
                 'is_bulk' => $payrollPayslips->count() > 1,
@@ -622,20 +652,16 @@ class ReportsController extends Controller
                 'total_hours' => $payrollPayslips->sum('hours_worked'),
                 'employee_name' => $payrollPayslips->count() === 1 ? $payrollPayslips->first()->employee_name : 'Bulk Payroll (' . $payrollPayslips->count() . ' Employees)',
                 'sss_deduction' => $payrollPayslips->sum(function ($slip) {
-                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
-                    return (float) ($d['sss'] ?? 0);
+                    return (float) ($slip->parsed_deductions['sss'] ?? 0);
                 }),
                 'philhealth_deduction' => $payrollPayslips->sum(function ($slip) {
-                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
-                    return (float) ($d['philhealth'] ?? 0);
+                    return (float) ($slip->parsed_deductions['philhealth'] ?? 0);
                 }),
                 'pagibig_deduction' => $payrollPayslips->sum(function ($slip) {
-                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
-                    return (float) ($d['pagibig'] ?? 0);
+                    return (float) ($slip->parsed_deductions['pagibig'] ?? 0);
                 }),
                 'tax_deduction' => $payrollPayslips->sum(function ($slip) {
-                    $d = is_string($slip->deductions) ? json_decode($slip->deductions, true) : ($slip->deductions ?? []);
-                    return (float) ($d['tax'] ?? 0);
+                    return (float) ($slip->parsed_deductions['tax'] ?? 0);
                 }),
             ];
         });
@@ -683,7 +709,7 @@ class ReportsController extends Controller
             ->orderBy('created_at', 'desc');
 
         if ($statusFilter) {
-            $payrollsQuery->where('status', $statusFilter);
+            $payrollsQuery->whereRaw('LOWER(status) = ?', [strtolower($statusFilter)]);
         }
 
         $filename = "payroll-report-{$month}.csv";

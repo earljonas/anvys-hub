@@ -2,18 +2,55 @@ import React from 'react';
 import { X, Archive, AlertTriangle, Package } from 'lucide-react';
 
 const ArchiveConfirmModal = ({ isOpen, onClose, item, onConfirm }) => {
+    const dialogRef = React.useRef(null);
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [error, setError] = React.useState('');
+
+    React.useEffect(() => {
+        if (isOpen) {
+            setError('');
+            setIsSubmitting(false);
+
+            // Small timeout to ensure DOM is ready before focusing
+            setTimeout(() => dialogRef.current?.focus(), 50);
+
+            const handleKeyDown = (e) => {
+                if (e.key === 'Escape') onClose();
+            };
+            document.addEventListener('keydown', handleKeyDown);
+            return () => document.removeEventListener('keydown', handleKeyDown);
+        }
+    }, [isOpen, onClose]);
+
     if (!isOpen || !item) return null;
 
     const hasStock = item.stock > 0;
 
-    const handleConfirm = () => {
-        onConfirm(item.id);
-        onClose();
+    const handleConfirm = async () => {
+        setIsSubmitting(true);
+        setError('');
+        try {
+            await onConfirm(item.id);
+            onClose();
+        } catch (err) {
+            setError('An error occurred while archiving. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden border border-[hsl(var(--border))]">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="archive-modal-title"
+        >
+            <div
+                ref={dialogRef}
+                tabIndex={-1}
+                className="bg-white rounded-xl shadow-lg w-full max-w-md mx-4 overflow-hidden border border-[hsl(var(--border))] outline-none"
+            >
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b border-[hsl(var(--border))]">
                     <div className="flex items-center gap-3">
@@ -23,13 +60,14 @@ const ArchiveConfirmModal = ({ isOpen, onClose, item, onConfirm }) => {
                                 : <Archive size={20} className="text-red-600" />
                             }
                         </div>
-                        <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+                        <h3 id="archive-modal-title" className="text-xl font-bold text-[hsl(var(--foreground))]">
                             {hasStock ? 'Warning' : 'Archive Item'}
                         </h3>
                     </div>
                     <button
                         onClick={onClose}
-                        className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors"
+                        aria-label="Close"
+                        className="p-1 hover:bg-[hsl(var(--muted))] rounded-lg text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] transition-colors cursor-pointer"
                     >
                         <X size={20} />
                     </button>
@@ -72,25 +110,33 @@ const ArchiveConfirmModal = ({ isOpen, onClose, item, onConfirm }) => {
                             : 'This item will be moved to the archive. You can restore it anytime from the Archived Items list.'
                         }
                     </p>
+
+                    {error && (
+                        <div className="p-3 mt-2 bg-red-50 text-red-700 text-sm font-medium rounded-lg border border-red-200 flex items-center gap-2">
+                            <AlertTriangle size={16} /> {error}
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-end gap-3 p-4 border-t border-[hsl(var(--border))] bg-[hsl(var(--muted))]/20">
                     <button
                         onClick={onClose}
-                        className="px-4 py-2.5 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors border border-[hsl(var(--border))] cursor-pointer"
+                        disabled={isSubmitting}
+                        className="px-4 py-2.5 text-sm font-medium text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-lg transition-colors border border-[hsl(var(--border))] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleConfirm}
-                        className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${hasStock
-                                ? 'bg-amber-500 hover:bg-amber-600'
-                                : 'bg-red-500 hover:bg-red-600'
+                        disabled={isSubmitting}
+                        className={`px-4 py-2.5 text-sm font-medium text-white rounded-lg transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${hasStock
+                            ? 'bg-amber-500 hover:bg-amber-600'
+                            : 'bg-red-500 hover:bg-red-600'
                             }`}
                     >
-                        <Archive size={14} />
-                        {hasStock ? 'Archive Anyway' : 'Archive'}
+                        <Archive size={14} className={isSubmitting ? 'animate-pulse' : ''} />
+                        {isSubmitting ? 'Archiving...' : (hasStock ? 'Archive Anyway' : 'Archive')}
                     </button>
                 </div>
             </div>

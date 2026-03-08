@@ -100,8 +100,12 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
     };
 
     const handleConfirmArchive = (id) => {
-        router.delete(`/admin/inventory/${id}`, {
-            preserveScroll: true,
+        return new Promise((resolve, reject) => {
+            router.delete(`/admin/inventory/${id}`, {
+                preserveScroll: true,
+                onSuccess: resolve,
+                onError: reject,
+            });
         });
     };
 

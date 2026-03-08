@@ -41,8 +41,9 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders, locatio
         window.open(`/admin/reports/sales/export?${params.toString()}`, '_blank');
     };
 
-    // Get readable month label
-    const monthLabel = new Date(currentMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    // Get readable month label (safely without UTC shift)
+    const [year, monthIndex] = currentMonth.split('-').map(Number);
+    const monthLabel = new Date(year, monthIndex - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const orders = recentOrders?.data || recentOrders || [];
 
@@ -83,9 +84,14 @@ const SalesReports = ({ stats, weeklyRevenue, bestSelling, recentOrders, locatio
                             ))}
                         </select>
                     </div>
-                    {(currentLocation) && (
+                    {(currentLocation || filters.month) && (
                         <button
-                            onClick={() => handleFilterChange('location', '')}
+                            onClick={() => {
+                                router.get('/admin/reports/sales', {}, {
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                });
+                            }}
                             className="text-xs text-[hsl(var(--primary))] hover:underline cursor-pointer"
                         >
                             Clear filters
