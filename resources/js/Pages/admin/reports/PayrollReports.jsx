@@ -24,7 +24,8 @@ const PayrollReports = ({
     const currentMonth = filters.month || new Date().toISOString().slice(0, 7);
     const currentStatus = filters.status || '';
 
-    const monthLabel = new Date(currentMonth + '-01').toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const [year, monthIndex] = currentMonth.split('-').map(Number);
+    const monthLabel = new Date(year, monthIndex - 1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
     const formatCurrency = (value) => {
         const numValue = Number(value) || 0;
@@ -92,13 +93,18 @@ const PayrollReports = ({
                         >
                             <option value="">All Statuses</option>
                             <option value="paid">Paid</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Draft">Draft</option>
+                            <option value="pending">Pending</option>
+                            <option value="draft">Draft</option>
                         </select>
                     </div>
-                    {hasActiveFilters && (
+                    {(currentStatus || filters.month) && (
                         <button
-                            onClick={() => handleFilterChange('status', '')}
+                            onClick={() => {
+                                router.get('/admin/reports/payroll', {}, {
+                                    preserveState: true,
+                                    preserveScroll: true,
+                                });
+                            }}
                             className="text-xs text-[hsl(var(--primary))] hover:underline cursor-pointer"
                         >
                             Clear filters
@@ -178,8 +184,8 @@ const PayrollReports = ({
                                         </div>
                                         <div className="text-right">
                                             <div className="font-bold text-[hsl(var(--foreground))]">{formatCurrency(payroll.amount)}</div>
-                                            <div className={`text-xs font-medium capitalize ${payroll.status === 'paid' ? 'text-emerald-600' :
-                                                (payroll.status === 'Pending' || payroll.status === 'draft') ? 'text-amber-600' : 'text-[hsl(var(--muted-foreground))]'
+                                            <div className={`text-xs font-medium capitalize ${payroll.status?.toLowerCase() === 'paid' ? 'text-emerald-600' :
+                                                (payroll.status?.toLowerCase() === 'pending' || payroll.status?.toLowerCase() === 'draft') ? 'text-amber-600' : 'text-[hsl(var(--muted-foreground))]'
                                                 }`}>
                                                 {payroll.status}
                                             </div>
