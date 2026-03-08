@@ -11,6 +11,7 @@ import ViewItemModal from '../../Components/inventory/ViewItemModal';
 import AdjustStockModal from '../../Components/inventory/AdjustStockModal';
 import EditItemModal from '../../Components/inventory/EditItemModal';
 import ArchivedItemsModal from '../../Components/inventory/ArchivedItemsModal';
+import ArchiveConfirmModal from '../../Components/inventory/ArchiveConfirmModal';
 import AdminLayout from '../../Layouts/AdminLayout';
 
 const AdminInventory = ({ items: initialItems = [], locations = [], logs: initialLogs = [], archivedItems = [] }) => {
@@ -42,7 +43,9 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
     const [isViewModalOpen, setIsViewModalOpen] = useState(false);
     const [isAdjustStockModalOpen, setIsAdjustStockModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isArchiveConfirmOpen, setIsArchiveConfirmOpen] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [archiveItem, setArchiveItem] = useState(null);
 
     // Get location names for filters
     const locationNames = locations.map(loc => loc.name);
@@ -85,12 +88,21 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
         });
     };
 
-    const handleDeleteItem = (id) => {
-        if (window.confirm('Are you sure you want to archive this item?')) {
-            router.delete(`/admin/inventory/${id}`, {
-                preserveScroll: true,
-            });
+    const handleOpenArchiveConfirm = (itemOrId) => {
+        // Accept either an item object or an id
+        const item = typeof itemOrId === 'object'
+            ? itemOrId
+            : items.find(i => i.id === itemOrId);
+        if (item) {
+            setArchiveItem(item);
+            setIsArchiveConfirmOpen(true);
         }
+    };
+
+    const handleConfirmArchive = (id) => {
+        router.delete(`/admin/inventory/${id}`, {
+            preserveScroll: true,
+        });
     };
 
     const handleRestoreItem = (id) => {
@@ -198,7 +210,7 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
                     currentPage={currentPage}
                     totalPages={totalPages}
                     onPageChange={setCurrentPage}
-                    onDelete={handleDeleteItem}
+                    onDelete={handleOpenArchiveConfirm}
                     onEdit={handleEditItem}
                     onView={handleViewItem}
                     onAdjustStock={handleOpenAdjustStock}
@@ -246,6 +258,13 @@ const AdminInventory = ({ items: initialItems = [], locations = [], logs: initia
                 item={selectedItem}
                 onSave={handleSaveEdit}
                 locations={locations}
+            />
+
+            <ArchiveConfirmModal
+                isOpen={isArchiveConfirmOpen}
+                onClose={() => setIsArchiveConfirmOpen(false)}
+                item={archiveItem}
+                onConfirm={handleConfirmArchive}
             />
         </div>
     );

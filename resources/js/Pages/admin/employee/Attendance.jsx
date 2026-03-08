@@ -9,6 +9,7 @@ import { Card } from '@/Components/employees/Card';
 import Badge from '@/Components/employees/Badge';
 import Modal from '@/Components/employees/Modal';
 import Pagination from '@/Components/employees/Pagination';
+import ConfirmModal from '@/Components/common/ConfirmModal';
 
 
 const StatusBadge = ({ status, isOngoing }) => {
@@ -175,6 +176,9 @@ const Attendance = ({ records, filters }) => {
     const [modalMode, setModalMode] = useState('view'); // 'view', 'edit'
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    // Confirm modal for approve/reject
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, record: null, action: null });
+
     // Initialize state from server filters
     const [dateFilter, setDateFilter] = useState(filters?.date || '');
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
@@ -192,15 +196,21 @@ const Attendance = ({ records, filters }) => {
     };
 
     const handleApprove = (record) => {
-        if (confirm(`Approve attendance for ${record.user.name}?`)) {
-            router.post(route('admin.attendance.approve', record.id));
-        }
+        setConfirmModal({ isOpen: true, record, action: 'approve' });
     };
 
     const handleReject = (record) => {
-        if (confirm(`Reject attendance for ${record.user.name}?`)) {
+        setConfirmModal({ isOpen: true, record, action: 'reject' });
+    };
+
+    const handleConfirmAction = () => {
+        const { record, action } = confirmModal;
+        if (action === 'approve') {
+            router.post(route('admin.attendance.approve', record.id));
+        } else if (action === 'reject') {
             router.post(route('admin.attendance.reject', record.id));
         }
+        setConfirmModal({ isOpen: false, record: null, action: null });
     };
 
     // Server-side filtering helpers
@@ -417,6 +427,19 @@ const Attendance = ({ records, filters }) => {
                     mode={modalMode}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ isOpen: false, record: null, action: null })}
+                onConfirm={handleConfirmAction}
+                title={confirmModal.action === 'approve' ? 'Approve Attendance' : 'Reject Attendance'}
+                message={confirmModal.action === 'approve'
+                    ? `Approve attendance for ${confirmModal.record?.user?.name}?`
+                    : `Reject attendance for ${confirmModal.record?.user?.name}?`
+                }
+                variant={confirmModal.action === 'approve' ? 'warning' : 'confirm'}
+                confirmText={confirmModal.action === 'approve' ? 'Approve' : 'Reject'}
+            />
         </div>
     );
 };

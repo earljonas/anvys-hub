@@ -1,17 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import { ArrowLeft, Printer, CheckCircle, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import PayslipTemplate from '@/Components/employees/payroll/PayslipTemplate';
+import ConfirmModal from '@/Components/common/ConfirmModal';
 
 const PayrollDetails = ({ payroll }) => {
     const { post, processing } = useForm();
+    const [paidConfirmOpen, setPaidConfirmOpen] = useState(false);
 
     const handleMarkAsPaid = () => {
-        if (confirm('Are you sure you want to mark this payroll as PAID? This action cannot be undone.')) {
-            post(route('admin.payroll.pay', payroll.id));
-        }
+        setPaidConfirmOpen(true);
+    };
+
+    const confirmMarkAsPaid = () => {
+        post(route('admin.payroll.pay', payroll.id));
     };
 
     return (
@@ -138,6 +142,16 @@ const PayrollDetails = ({ payroll }) => {
 
             {/* Print View */}
             <PayslipTemplate payroll={payroll} payslips={payroll.payslips} />
+
+            <ConfirmModal
+                isOpen={paidConfirmOpen}
+                onClose={() => setPaidConfirmOpen(false)}
+                onConfirm={confirmMarkAsPaid}
+                title="Mark as Paid"
+                message="Are you sure you want to mark this payroll as PAID? This action cannot be undone."
+                variant="warning"
+                confirmText="Mark as Paid"
+            />
         </>
     );
 };

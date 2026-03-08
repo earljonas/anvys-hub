@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import Button from '../common/Button';
 import Input from '../common/Input';
+import ConfirmModal from '../common/ConfirmModal';
 
 // --- Sub-Components for Cleanliness ---
 
@@ -69,6 +70,8 @@ const EventModal = ({
         extraGuests: 0, totalPrice: 0
     });
     const [error, setError] = useState(null);
+    const [criticalError, setCriticalError] = useState(null);
+    const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
     // Today's date in YYYY-MM-DD (used for min date constraint)
     const today = new Date().toLocaleDateString('en-CA');
@@ -109,7 +112,7 @@ const EventModal = ({
             }
         } catch (e) {
             console.error('Modal Init Error', e);
-            setError('Failed to initialize form.');
+            setCriticalError('Failed to initialize form.');
         }
     }, [isOpen, mode, event, selectedDate, packages]);
 
@@ -131,7 +134,7 @@ const EventModal = ({
 
     const handleSave = () => {
         if (!formData.customerName || !formData.contactNumber || !formData.address || !formData.eventDate) {
-            alert("Please fill in all required fields");
+            setError("Please fill in all required fields");
             return;
         }
         if (formData.eventDate < today) {
@@ -142,7 +145,7 @@ const EventModal = ({
     };
 
     if (!isOpen) return null;
-    if (error) return <ErrorView message={error} onClose={onClose} />;
+    if (criticalError) return <ErrorView message={criticalError} onClose={onClose} />;
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-all">
@@ -169,6 +172,14 @@ const EventModal = ({
                         <X size={20} />
                     </button>
                 </div>
+
+                {/* Inline validation error */}
+                {error && (
+                    <div className="mx-6 mb-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center gap-2">
+                        <AlertCircle size={16} className="shrink-0" />
+                        {error}
+                    </div>
+                )}
 
                 {/* --- Tabs --- */}
                 <div className="px-6 mt-4 border-b border-[hsl(var(--border))]">
@@ -350,9 +361,7 @@ const EventModal = ({
                             <Button
                                 variant="ghost"
                                 className="w-full sm:w-auto text-red-600 hover:text-red-700 hover:bg-red-50"
-                                onClick={() => {
-                                    if (confirm('Cancel this event?')) onCancelEvent(event.id);
-                                }}
+                                onClick={() => setCancelConfirmOpen(true)}
                             >
                                 <XCircle size={16} className="mr-2" /> Cancel Event
                             </Button>
@@ -378,6 +387,16 @@ const EventModal = ({
                 </div>
 
             </div>
+
+            <ConfirmModal
+                isOpen={cancelConfirmOpen}
+                onClose={() => setCancelConfirmOpen(false)}
+                onConfirm={() => onCancelEvent(event.id)}
+                title="Cancel Event"
+                message="Are you sure you want to cancel this event? This action cannot be undone."
+                variant="confirm"
+                confirmText="Cancel Event"
+            />
         </div>
     );
 };
