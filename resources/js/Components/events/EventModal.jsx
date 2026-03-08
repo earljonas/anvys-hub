@@ -70,6 +70,7 @@ const EventModal = ({
         extraGuests: 0, totalPrice: 0
     });
     const [error, setError] = useState(null);
+    const [criticalError, setCriticalError] = useState(null);
     const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
 
     // Today's date in YYYY-MM-DD (used for min date constraint)
@@ -111,7 +112,7 @@ const EventModal = ({
             }
         } catch (e) {
             console.error('Modal Init Error', e);
-            setError('Failed to initialize form.');
+            setCriticalError('Failed to initialize form.');
         }
     }, [isOpen, mode, event, selectedDate, packages]);
 
@@ -144,7 +145,7 @@ const EventModal = ({
     };
 
     if (!isOpen) return null;
-    if (error) return <ErrorView message={error} onClose={onClose} />;
+    if (criticalError) return <ErrorView message={criticalError} onClose={onClose} />;
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 transition-all">
@@ -171,6 +172,14 @@ const EventModal = ({
                         <X size={20} />
                     </button>
                 </div>
+
+                {/* Inline validation error */}
+                {error && (
+                    <div className="mx-6 mb-2 px-4 py-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center gap-2">
+                        <AlertCircle size={16} className="shrink-0" />
+                        {error}
+                    </div>
+                )}
 
                 {/* --- Tabs --- */}
                 <div className="px-6 mt-4 border-b border-[hsl(var(--border))]">
