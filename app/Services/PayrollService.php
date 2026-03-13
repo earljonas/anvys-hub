@@ -21,6 +21,8 @@ class PayrollService
                 });
             });
 
+            $userIdsWithExistingPayslips = [];
+
             if ($userId && $userId !== 'all') {
                 $existingQuery->where('user_id', $userId);
                 $existingPayslips = $existingQuery->exists();
@@ -29,29 +31,37 @@ class PayrollService
                     throw new \Exception('A payroll already exists for this employee within the selected date range.');
                 }
             } else {
-                $existingPayslips = $existingQuery->first();
-
-                if ($existingPayslips) {
-                    $employeeName = optional($existingPayslips->user)->name ?? 'An employee';
-                    throw new \Exception("{$employeeName} already has a payroll within the selected date range.");
-                }
+                // Bulk Generation: Get IDs of users who already have a payslip in this range
+                $userIdsWithExistingPayslips = $existingQuery->pluck('user_id')->toArray();
             }
 
-            $payroll = Payroll::create([
+            $query = User::with('employee')->whereHas('employee');
+
+            if ($userId && $userId !== 'all') {
+                $query->where('id', $userId);
+            } elseif (!empty($userIdsWithExistingPayslips)) {
+                // Exclude users who already have payslips
+                $query->whereNotIn('id', $userIdsWithExistingPayslips);
+            }
+
+            $users = $query->get();
+
+            // Check if there are any eligible users left to process
+            if ($users->isEmpty()) {
+                if ($userId && $userId !== 'all') {
+                     // This condition shouldn't be reached due to the check above, but as a fallback:
+                     throw new \Exception('A payroll already exists for this employee within the selected date range.');
+                }
+                throw new \Exception('All eligible employees already have a payroll within the selected date range.');
+            }
+
+             $payroll = Payroll::create([
                 'start_date' => $startDate,
                 'end_date' => $endDate,
                 'status' => 'draft',
             ]);
 
             $totalPayrollAmount = 0;
-
-            $query = User::with('employee')->whereHas('employee');
-
-            if ($userId && $userId !== 'all') {
-                $query->where('id', $userId);
-            }
-
-            $users = $query->get();
 
             foreach ($users as $user) {
                 $calc = $this->calculateForUser($user, $startDate, $endDate);
@@ -75,6 +85,87 @@ class PayrollService
 
             return $payroll;
         });
+    }
+
+    public function calculateBulkPreview($startDate, $endDate)
+    {
+        $existingQuery = Payslip::whereHas('payroll', function ($query) use ($startDate, $endDate) {
+            $query->where(function ($q) use ($startDate, $endDate) {
+                $q->where('start_date', '<=', $endDate)
+                    ->where('end_date', '>=', $startDate);
+            });
+        });
+
+        $userIdsWithExistingPayslips = $existingQuery->pluck('user_id')->toArray();
+
+        $query = User::with('employee')->whereHas('employee');
+
+        if (!empty($userIdsWithExistingPayslips)) {
+            $query->whereNotIn('id', $userIdsWithExistingPayslips);
+        }
+
+        $users = $query->get();
+
+        if ($users->isEmpty()) {
+            return null;
+        }
+
+        $totalDaysWorked = 0;
+        $totalHours = 0;
+        $totalRegularHours = 0;
+        $totalOvertimeHours = 0;
+        $totalGrossPay = 0;
+        $totalRegularPay = 0;
+        $totalOvertimePay = 0;
+        $totalNetPay = 0;
+        $totalDeductionsArr = ['sss' => 0, 'philhealth' => 0, 'pagibig' => 0, 'tax' => 0];
+        $totalDeductionsAmount = 0;
+
+        $processedUsers = 0;
+        $processedEmployeeNames = [];
+
+        foreach ($users as $user) {
+            $calc = $this->calculateForUser($user, $startDate, $endDate);
+            if (!$calc) continue;
+
+            $processedUsers++;
+            $processedEmployeeNames[] = $user->name;
+            $totalDaysWorked += $calc['days_worked'];
+            $totalHours += $calc['total_hours'];
+            $totalRegularHours += $calc['regular_hours'];
+            $totalOvertimeHours += $calc['overtime_hours'];
+            $totalGrossPay += $calc['gross_pay'];
+            $totalRegularPay += $calc['regular_pay'];
+            $totalOvertimePay += $calc['overtime_pay'];
+            $totalNetPay += $calc['net_pay'];
+            $totalDeductionsAmount += $calc['total_deductions'];
+
+            foreach ($calc['deductions'] as $key => $amount) {
+                if (isset($totalDeductionsArr[$key])) {
+                    $totalDeductionsArr[$key] += $amount;
+                }
+            }
+        }
+
+        if ($processedUsers === 0) {
+            return null;
+        }
+
+        return [
+            'is_bulk' => true,
+            'employees_processed' => $processedUsers,
+            'employee_names' => $processedEmployeeNames,
+            'days_worked' => $totalDaysWorked,
+            'total_hours' => $totalHours,
+            'regular_hours' => $totalRegularHours,
+            'overtime_hours' => $totalOvertimeHours,
+            'gross_pay' => $totalGrossPay,
+            'regular_pay' => $totalRegularPay,
+            'overtime_pay' => $totalOvertimePay,
+            'deductions' => $totalDeductionsArr,
+            'total_deductions' => $totalDeductionsAmount,
+            'net_pay' => $totalNetPay,
+        ];
     }
 
     public function calculateForUser($user, $startDate, $endDate)

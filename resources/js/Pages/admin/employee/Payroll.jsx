@@ -211,23 +211,13 @@ const Payroll = ({ payrolls, employees, filters }) => { // Added filters prop
                             </div>
                         </div>
 
-                        {data.user_id === 'all' ? (
-                            <button
-                                onClick={handleGenerate}
-                                disabled={processing}
-                                className="w-full py-2.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg font-bold hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 cursor-pointer"
-                            >
-                                {processing ? 'Generating...' : 'Generate Bulk Payroll'}
-                            </button>
-                        ) : (
-                            <button
-                                onClick={handleCalculate}
-                                disabled={calculating || !data.user_id || !data.start_date || !data.end_date}
-                                className="w-full py-2.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg font-bold hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 cursor-pointer"
-                            >
-                                {calculating ? 'Calculating...' : 'Calculate'}
-                            </button>
-                        )}
+                        <button
+                            onClick={handleCalculate}
+                            disabled={calculating || !data.user_id || !data.start_date || !data.end_date}
+                            className="w-full py-2.5 bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] rounded-lg font-bold hover:opacity-90 transition-opacity shadow-sm disabled:opacity-50 cursor-pointer"
+                        >
+                            {calculating ? 'Calculating...' : (data.user_id === 'all' ? 'Calculate Bulk Payroll' : 'Calculate')}
+                        </button>
 
                         {calcError && (
                             <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100 flex items-center gap-2">
@@ -260,10 +250,26 @@ const Payroll = ({ payrolls, employees, filters }) => { // Added filters prop
                                 </div>
 
                                 <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="text-gray-600">Hourly Rate:</span>
-                                        <span className="font-bold">₱{Number(calculation.hourly_rate).toFixed(2)}/hr</span>
-                                    </div>
+                                    {calculation.is_bulk ? (
+                                        <div className="space-y-1">
+                                            <div className="flex justify-between text-sm">
+                                                <span className="text-gray-600 font-medium">Employees Processed:</span>
+                                                <span className="font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded">{calculation.employees_processed} Employee(s)</span>
+                                            </div>
+                                            {calculation.employee_names && calculation.employee_names.length > 0 && (
+                                                <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-100 mt-1 flex flex-wrap gap-1">
+                                                    {calculation.employee_names.map((name, i) => (
+                                                        <span key={i} className="bg-white px-1.5 py-0.5 rounded shadow-sm border border-gray-100 text-[10px] font-medium text-gray-700">{name}</span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-gray-600">Hourly Rate:</span>
+                                            <span className="font-bold">₱{Number(calculation.hourly_rate).toFixed(2)}/hr</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-sm py-2 border-b border-dashed border-gray-100">
                                         <span className="text-gray-600">Regular Pay ({calculation.regular_hours} hrs):</span>
                                         <span className="font-bold">₱{Number(calculation.regular_pay).toLocaleString()}</span>
@@ -394,7 +400,7 @@ const Payroll = ({ payrolls, employees, filters }) => { // Added filters prop
                             ) : (
                                 filteredPayrolls.map((payroll) => (
                                     <tr key={payroll.id} className="hover:bg-[hsl(var(--muted))/0.3] transition-colors">
-                                        <td className="py-4 px-6 font-bold text-[hsl(var(--foreground))]">
+                                        <td className="py-4 px-6 font-bold text-[hsl(var(--foreground))] max-w-[250px] truncate cursor-help" title={payroll.employee_name}>
                                             {payroll.employee_name}
                                         </td>
                                         <td className="py-4 px-6 text-[hsl(var(--muted-foreground))]">
