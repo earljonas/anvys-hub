@@ -120,15 +120,22 @@ class POSSeeder extends Seeder
         }
 
         // Create Fruit Soda Products (with addons, no sizes)
-        $sodaFlavors = ['Strawberry', 'Green Apple', 'Four Seasons', 'Lychee', 'Blueberry'];
+        $sodaFlavors = [
+            'Strawberry' => '/product_images/strawberry_fruit.jpg',
+            'Green Apple' => '/product_images/green_apple_fruit.jpg',
+            'Four Seasons' => '/product_images/four_seasons_fruit.jpg',
+            'Lychee' => '/product_images/lychee_fruit.jpg',
+            'Blueberry' => '/product_images/blueberry_fruit.jpg',
+        ];
 
-        foreach ($sodaFlavors as $flavor) {
+        foreach ($sodaFlavors as $flavor => $image) {
             $product = Product::create([
                 'category_id' => $sodaCategory->id,
                 'name' => $flavor . ' Fruit Soda',
                 'flavor' => $flavor,
                 'base_price' => 59,
                 'has_sizes' => false,
+                'image' => $image,
                 'is_active' => true,
             ]);
 
