@@ -105,7 +105,7 @@ ENV APP_ENV=production \
 
 # Copy the app (including vendor) and built frontend assets.
 COPY --from=vendor /var/www/html /var/www/html
-COPY --from=assets /var/www/html/public/build /var/www/html/public/build
+COPY --from=assets /var/www/html/public /var/www/html/public
 
 # Entry point script is created inside the image so the Dockerfile is self-contained.
 RUN cat > /entrypoint.sh <<'EOF'
