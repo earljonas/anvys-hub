@@ -16,7 +16,6 @@ export default defineConfig({
     resolve: {
         alias: {
             'ziggy-js': path.resolve(__dirname, 'vendor/tightenco/ziggy/dist/index.esm.js'),
-            'tw-animate-css': path.resolve(__dirname, 'node_modules/tw-animate-css/dist/tw-animate.css'),
         },
     },
     server: {
