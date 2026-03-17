@@ -1,0 +1,27 @@
+# Dependencies (rebuilt inside Docker)
+node_modules
+vendor
+
+# Version control
+.git
+.gitignore
+.gitattributes
+
+# IDE / Editor
+.idea
+.vscode
+*.swp
+*.swo
+
+# Environment (set via Railway dashboard)
+.env
+
+# Dev / testing
+tests
+phpunit.xml
+phpunit.mysql.xml
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
