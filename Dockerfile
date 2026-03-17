@@ -9,7 +9,7 @@
 # This image uses PHP's built-in server for simplicity. For higher traffic,
 # swap runtime to nginx + php-fpm (more moving parts, but better performance).
 
-FROM php:8.2-cli AS php_base
+FROM php:8.4-cli AS php_base
 
 WORKDIR /var/www/html
 
