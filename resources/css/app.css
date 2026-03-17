@@ -1,6 +1,5 @@
 @import "tailwindcss";
-/* Import via file path to avoid Node "exports" condition resolution issues during Tailwind/Vite builds. */
-@import "../../node_modules/tw-animate-css/dist/tw-animate.css";
+@import "tw-animate-css";
 
 @source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
 @source "../../storage/framework/views/*.php";
