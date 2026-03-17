@@ -66,15 +66,6 @@ Handles customer bookings for private events like birthday parties or corporate 
    npm run dev
    ```
 
-## Deploying to Railway
-
-If you deploy and see a white/blank page, it usually means the Vite assets were not built/served (Inertia/React won’t render without the JS bundle).
-
-- **Build command**: `composer install --no-dev --optimize-autoloader && npm ci && npm run build && php artisan config:cache && php artisan route:cache && php artisan view:cache`
-- **Start command**: `php -S 0.0.0.0:$PORT -t public public/index.php`
-- **Required env vars**: `APP_KEY`, `APP_URL`, database vars (`DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`)
-- **After first deploy**: run `php artisan migrate --force` (Railway “Run Command”)
-
 ## Project Structure
 
 A quick map of where things live so you aren't hunting for files:
