@@ -147,7 +147,7 @@ if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
   fi
 fi
 
-exec php -S 0.0.0.0:"$PORT" -t public public/index.php
+exec php -S 0.0.0.0:"$PORT" -t public
 EOF
 
 RUN chmod +x /entrypoint.sh
