@@ -136,6 +136,10 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
         employment_type: 'full_time',
         hourly_rate: 0,
         basic_salary: 0,
+        tin_number: '',
+        sss_number: '',
+        philhealth_number: '',
+        pagibig_number: '',
         clock_pin: '',
     });
 
@@ -154,6 +158,10 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
                     employment_type: employee.employee?.employment_type || 'full_time',
                     hourly_rate: employee.employee?.hourly_rate || 0,
                     basic_salary: employee.employee?.basic_salary || 0,
+                    tin_number: employee.employee?.tin_number || '',
+                    sss_number: employee.employee?.sss_number || '',
+                    philhealth_number: employee.employee?.philhealth_number || '',
+                    pagibig_number: employee.employee?.pagibig_number || '',
                     clock_pin: employee.clock_pin || '',
                 });
             } else {
@@ -355,6 +363,57 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
                                             placeholder="0.00"
                                         />
                                         {errors.basic_salary && <p className="text-sm text-red-500 mt-1">{errors.basic_salary}</p>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Section: Government Contributions */}
+                        {!isView && (
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider border-b border-[hsl(var(--border))] pb-2">
+                                    Government Contributions
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">TIN</label>
+                                        <Input
+                                            value={data.tin_number}
+                                            onChange={e => setData('tin_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="000-000-000-000"
+                                        />
+                                        {errors.tin_number && <p className="text-sm text-red-500 mt-1">{errors.tin_number}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">SSS Number</label>
+                                        <Input
+                                            value={data.sss_number}
+                                            onChange={e => setData('sss_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="00-0000000-0"
+                                        />
+                                        {errors.sss_number && <p className="text-sm text-red-500 mt-1">{errors.sss_number}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">PhilHealth Number</label>
+                                        <Input
+                                            value={data.philhealth_number}
+                                            onChange={e => setData('philhealth_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="00-000000000-0"
+                                        />
+                                        {errors.philhealth_number && <p className="text-sm text-red-500 mt-1">{errors.philhealth_number}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Pag-IBIG Number</label>
+                                        <Input
+                                            value={data.pagibig_number}
+                                            onChange={e => setData('pagibig_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="0000-0000-0000"
+                                        />
+                                        {errors.pagibig_number && <p className="text-sm text-red-500 mt-1">{errors.pagibig_number}</p>}
                                     </div>
                                 </div>
                             </div>

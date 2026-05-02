@@ -100,8 +100,17 @@ class AttendanceController extends Controller
         $user = auth()->user();
         $userId = $user->id;
 
+        // Rate limiting: 5 attempts per 3 minutes, keyed by IP
+        $throttleKey = 'clock_in|' . $request->ip();
+
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            return back()->withErrors(['message' => "Too many attempts. Please try again in {$seconds} seconds."]);
+        }
+
         if ($user->clock_pin) {
             if (!$request->pin || $request->pin !== $user->clock_pin) {
+                \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 180);
                 return back()->withErrors(['pin' => 'Invalid PIN. Please try again.']);
             }
         }
@@ -116,6 +125,17 @@ class AttendanceController extends Controller
                 return back()->withErrors(['message' => 'You have already completed your shift for today.']);
             }
             return back()->withErrors(['message' => 'You are already clocked in.']);
+        }
+
+        // Kiosk Geofencing Validation
+        $employee = $user->employee;
+        if ($employee && $employee->location) {
+            $allowedIp = $employee->location->allowed_ip;
+            if (!empty($allowedIp) && $request->ip() !== $allowedIp) {
+                return back()->withErrors([
+                    'message' => "Geofence restriction: You must be physically on the {$employee->location->name} network to clock in."
+                ]);
+            }
         }
 
         AttendanceRecord::create([
@@ -139,8 +159,17 @@ class AttendanceController extends Controller
         $user = auth()->user();
         $userId = $user->id;
 
+        // Rate limiting: 5 attempts per 3 minutes, keyed by IP
+        $throttleKey = 'clock_out|' . $request->ip();
+
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 5)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            return back()->withErrors(['message' => "Too many attempts. Please try again in {$seconds} seconds."]);
+        }
+
         if ($user->clock_pin) {
             if (!$request->pin || $request->pin !== $user->clock_pin) {
+                \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 180);
                 return back()->withErrors(['pin' => 'Invalid PIN. Please try again.']);
             }
         }
@@ -153,6 +182,17 @@ class AttendanceController extends Controller
         if (!$record) {
             return back()
                 ->withErrors(['message' => 'No active session found.']);
+        }
+
+        // Kiosk Geofencing Validation
+        $employee = $user->employee;
+        if ($employee && $employee->location) {
+            $allowedIp = $employee->location->allowed_ip;
+            if (!empty($allowedIp) && $request->ip() !== $allowedIp) {
+                return back()->withErrors([
+                    'message' => "Geofence restriction: You must be physically on the {$employee->location->name} network to clock out."
+                ]);
+            }
         }
 
         $clockOut = now();

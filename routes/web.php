@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Auth\HomeController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\MfaController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ScheduleController;
@@ -13,26 +14,34 @@ use App\Http\Controllers\Admin\PayrollController;
 use App\Http\Controllers\InventoryController;
 use App\Http\Controllers\POSController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\EventPaymentController;
 
 Route::get('/', [HomeController::class, 'index']);
 
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'show'])->name('login');
-    Route::post('/login', [LoginController::class, 'login'])->name('login.post');
-});
+Route::get('/login', [LoginController::class, 'show'])->name('login');
+Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
 
 Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('mfa')->middleware('auth')->group(function () {
+    Route::get('/setup', [MfaController::class, 'showSetup'])->name('mfa.setup');
+    Route::post('/setup', [MfaController::class, 'confirmSetup'])->name('mfa.setup.confirm');
+    Route::get('/verify', [MfaController::class, 'showVerify'])->name('mfa.verify');
+    Route::post('/verify', [MfaController::class, 'verify'])->middleware('throttle:mfa')->name('mfa.verify.post');
+});
+
+Route::prefix('admin')->middleware(['auth', 'admin', 'mfa'])->group(function () {
 
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
 
-    Route::get('/settings', fn() => Inertia::render('admin/Settings'));
+    Route::get('/settings', fn() => Inertia::render('admin/Settings'))->name('admin.settings');
+    Route::post('/settings/password', [ProfileController::class, 'updatePassword'])->name('admin.settings.password');
 
 
     Route::get('/events', [EventController::class, 'index'])->name('admin.events');
@@ -86,12 +95,14 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/reports/inventory/export', [ReportsController::class, 'exportInventoryCsv'])->name('admin.reports.inventory.export');
     Route::get('/reports/events/export', [ReportsController::class, 'exportEventsCsv'])->name('admin.reports.events.export');
     Route::get('/reports/payroll/export', [ReportsController::class, 'exportPayrollCsv'])->name('admin.reports.payroll.export');
+
+    Route::get('/reports/audit-logs', [AuditLogController::class, 'index'])->name('admin.reports.audit');
 });
 
 Route::prefix('staff')->middleware('auth')->group(function () {
     Route::get('/attendance', [StaffAttendanceController::class, 'index'])->name('staff.attendance');
-    Route::post('/attendance/clock-in', [StaffAttendanceController::class, 'clockIn'])->name('staff.attendance.clockIn');
-    Route::post('/attendance/clock-out', [StaffAttendanceController::class, 'clockOut'])->name('staff.attendance.clockOut');
+    Route::post('/attendance/clock-in', [StaffAttendanceController::class, 'clockIn'])->middleware('throttle:clock_in')->name('staff.attendance.clockIn');
+    Route::post('/attendance/clock-out', [StaffAttendanceController::class, 'clockOut'])->middleware('throttle:clock_in')->name('staff.attendance.clockOut');
 
     Route::get('/schedule', [ScheduleController::class, 'staffIndex'])->name('staff.schedule');
 
@@ -100,4 +111,8 @@ Route::prefix('staff')->middleware('auth')->group(function () {
 
     Route::get('/inventory', [InventoryController::class, 'staffIndex'])->name('staff.inventory');
     Route::post('/inventory/{inventoryItem}/adjust', [InventoryController::class, 'adjustStock'])->name('staff.inventory.adjust');
+
+    Route::get('/settings', [\App\Http\Controllers\Staff\ProfileController::class, 'index'])->name('staff.settings');
+    Route::post('/settings/password', [\App\Http\Controllers\Staff\ProfileController::class, 'updatePassword'])->name('staff.settings.password');
+    Route::post('/settings/pin', [\App\Http\Controllers\Staff\ProfileController::class, 'updatePin'])->name('staff.settings.pin');
 });

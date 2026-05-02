@@ -1,7 +1,16 @@
 import React from 'react';
-import { X, AlertTriangle, AlertCircle, CheckCircle, Info } from 'lucide-react';
+import { X, AlertTriangle, AlertCircle, CheckCircle, Info, HelpCircle } from 'lucide-react';
 
 const variantConfig = {
+    primary: {
+        icon: HelpCircle,
+        iconBg: 'bg-pink-100',
+        iconColor: 'text-pink-600',
+        accentColor: 'from-pink-400 via-pink-500 to-rose-500',
+        confirmBtnClass: 'bg-[hsl(var(--primary))] hover:opacity-90 text-[hsl(var(--primary-foreground))]',
+        defaultTitle: 'Confirm Action',
+        defaultConfirmText: 'Confirm',
+    },
     confirm: {
         icon: AlertTriangle,
         iconBg: 'bg-red-100',

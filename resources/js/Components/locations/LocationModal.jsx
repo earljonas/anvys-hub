@@ -4,10 +4,10 @@ import Button from '../common/Button';
 import Input from '../common/Input';
 
 const LocationModal = ({ isOpen, onClose, mode, location, onSave }) => {
-    // Initial State
     const initialForm = {
         name: '',
         address: '',
+        allowed_ip: '',
         status: 'Active'
     };
 
@@ -22,6 +22,7 @@ const LocationModal = ({ isOpen, onClose, mode, location, onSave }) => {
                 setFormData({
                     name: location.name,
                     address: location.address,
+                    allowed_ip: location.allowed_ip || '',
                     status: location.status
                 });
             }
@@ -87,6 +88,23 @@ const LocationModal = ({ isOpen, onClose, mode, location, onSave }) => {
                                 placeholder="Full address"
                                 required
                             />
+                        )}
+                    </div>
+
+                    {/* Allowed Kiosk IP Field */}
+                    <div>
+                        <label className="block text-sm font-medium text-[hsl(var(--muted-foreground))] mb-1">Allowed Kiosk IP Address</label>
+                        {isView ? (
+                            <p className="text-[hsl(var(--foreground))] font-mono text-sm">{formData.allowed_ip || <span className="text-gray-400 italic">No Geofencing (Any IP allowed)</span>}</p>
+                        ) : (
+                            <>
+                                <Input
+                                    value={formData.allowed_ip}
+                                    onChange={(e) => setFormData({ ...formData, allowed_ip: e.target.value })}
+                                    placeholder="e.g. 192.168.1.50"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Leave blank to allow clock-ins from any IP address at this location.</p>
+                            </>
                         )}
                     </div>
 

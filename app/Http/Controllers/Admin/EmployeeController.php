@@ -80,7 +80,7 @@ class EmployeeController extends Controller
             'contact_number' => $validated['contact_number'],
             'address' => $validated['address'],
             'email' => $email,
-            'password' => Hash::make('password'),
+            'password' => Hash::make('Anvystaff@2026'), // New secure default employee password
             'clock_pin' => $validated['clock_pin'] ?? null,
             'is_admin' => false,
         ]);
