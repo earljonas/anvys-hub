@@ -40,14 +40,19 @@ class RealGoogle2FA
      */
     public function verifyKey($secret, $code, $window = 1)
     {
-        if (empty($secret) || empty($code)) {
+        // Strict 6-digit input validation
+        if (empty($secret) || empty($code) || strlen((string)$code) !== 6 || !is_numeric($code)) {
             return false;
         }
 
         $timestamp = floor(time() / 30);
+        $codeStr = (string)$code;
         
         for ($i = -$window; $i <= $window; $i++) {
-            if ($this->calculateCode($secret, $timestamp + $i) === $code) {
+            $validCode = $this->calculateCode($secret, $timestamp + $i);
+            
+            // Constant-time string comparison to prevent timing attacks
+            if (hash_equals($validCode, $codeStr)) {
                 return true;
             }
         }

@@ -22,8 +22,10 @@ use App\Http\Controllers\EventPaymentController;
 
 Route::get('/', [HomeController::class, 'index']);
 
-Route::get('/login', [LoginController::class, 'show'])->name('login');
-Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'show'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
+});
 
 Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth')

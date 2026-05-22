@@ -17,6 +17,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Prevent seeding predictable credentials in production
+        if (!app()->environment('local', 'testing')) {
+            $this->command->warn('Seeder skipped: not in local/testing environment.');
+            return;
+        }
+
         // 1. Create Admin User
         $admin = User::firstOrCreate(
             ['email' => 'admin@anvys.com'],

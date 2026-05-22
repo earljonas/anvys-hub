@@ -73,6 +73,9 @@ class EmployeeController extends Controller
             $count++;
         }
 
+        // Generate a unique random temporary password for each new employee
+        $tempPassword = Str::password(12);
+
         $user = User::create([
             'name' => $validated['first_name'] . ' ' . $validated['last_name'],
             'first_name' => $validated['first_name'],
@@ -80,7 +83,7 @@ class EmployeeController extends Controller
             'contact_number' => $validated['contact_number'],
             'address' => $validated['address'],
             'email' => $email,
-            'password' => Hash::make('Anvystaff@2026'), // New secure default employee password
+            'password' => Hash::make($tempPassword),
             'clock_pin' => $validated['clock_pin'] ?? null,
             'is_admin' => false,
         ]);
@@ -99,7 +102,13 @@ class EmployeeController extends Controller
             'pagibig_number' => $validated['pagibig_number'] ?? null,
         ]);
 
-        return back()->with('success', 'Employee created successfully.');
+        return back()->with([
+            'success' => 'Employee created successfully.',
+            'temp_credentials' => [
+                'email' => $email,
+                'password' => $tempPassword,
+            ],
+        ]);
     }
 
     public function update(Request $request, $id)

@@ -4,6 +4,7 @@ import { Settings as SettingsIcon, ShieldCheck, KeyRound } from 'lucide-react';
 import AdminLayout from '@/Layouts/AdminLayout';
 import Button from '@/Components/common/Button';
 import Input from '@/Components/common/Input';
+import PasswordStrengthIndicator from '@/Components/common/PasswordStrengthIndicator';
 
 const Settings = () => {
     const { flash } = usePage().props;
@@ -104,6 +105,7 @@ const Settings = () => {
                                     className="block w-full"
                                     required
                                 />
+                                <PasswordStrengthIndicator password={data.password} />
                             </div>
 
                             <div>

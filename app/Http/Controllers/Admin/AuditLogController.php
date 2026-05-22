@@ -32,8 +32,8 @@ class AuditLogController extends Controller
                 'action' => $log->action,
                 'subject_type' => class_basename($log->subject_type),
                 'subject_id' => $log->subject_id,
-                'old_values' => $log->old_values,
-                'new_values' => $log->new_values,
+                'old_values' => $this->scrubSensitiveData($log->old_values),
+                'new_values' => $this->scrubSensitiveData($log->new_values),
                 'ip_address' => $log->ip_address,
                 'created_at' => $log->created_at->format('M d, Y h:i A'),
             ];
@@ -43,5 +43,24 @@ class AuditLogController extends Controller
             'logs' => $logs,
             'filters' => $request->only(['action', 'subject_type']),
         ]);
+    }
+
+    private function scrubSensitiveData($data)
+    {
+        if (!is_array($data)) return $data;
+
+        $sensitiveKeys = [
+            'password', 'clock_pin', 'google2fa_secret', 'remember_token', 
+            'basic_salary', 'hourly_rate', 'tin_number', 'sss_number', 
+            'philhealth_number', 'pagibig_number'
+        ];
+
+        foreach ($sensitiveKeys as $key) {
+            if (array_key_exists($key, $data)) {
+                $data[$key] = '[REDACTED]';
+            }
+        }
+
+        return $data;
     }
 }

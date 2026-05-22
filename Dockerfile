@@ -104,8 +104,8 @@ ENV APP_ENV=production \
     APP_DEBUG=false
 
 # Copy the app (including vendor) and built frontend assets.
-COPY --from=vendor /var/www/html /var/www/html
-COPY --from=assets /var/www/html/public /var/www/html/public
+COPY --from=vendor --chown=www-data:www-data /var/www/html /var/www/html
+COPY --from=assets --chown=www-data:www-data /var/www/html/public /var/www/html/public
 
 # Entry point script is created inside the image so the Dockerfile is self-contained.
 RUN cat > /entrypoint.sh <<'EOF'
@@ -127,8 +127,7 @@ mkdir -p \
   storage/logs \
   bootstrap/cache
 
-# Best-effort permissions (some environments may ignore chown).
-chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
+# No chown needed here since we already own /var/www/html and run as www-data
 
 # Ensure the public storage symlink exists for uploaded/public files.
 if [ ! -e public/storage ]; then
@@ -151,6 +150,8 @@ exec php -S 0.0.0.0:"$PORT" -t public
 EOF
 
 RUN chmod +x /entrypoint.sh
+
+USER www-data
 
 EXPOSE 10000
 ENTRYPOINT ["/entrypoint.sh"]

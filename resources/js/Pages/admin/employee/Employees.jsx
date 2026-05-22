@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X } from 'lucide-react';
+import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X, Copy, CheckCircle, ShieldCheck } from 'lucide-react';
 import Button from '@/Components/common/Button';
 import Input from '@/Components/common/Input';
 import ConfirmModal from '@/Components/common/ConfirmModal';
@@ -180,6 +180,7 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
             });
         } else {
             post(route('admin.employees.store'), {
+                preserveScroll: true,
                 onSuccess: () => { onClose(); reset(); }
             });
         }
@@ -449,6 +450,8 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
 };
 
 const Employees = ({ employees = { data: [], links: [] }, locations = [], filters = {} }) => {
+    const { flash } = usePage().props;
+
     // 1. SAFETY: Ensure filters handles nulls
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     const [statusFilter, setStatusFilter] = useState(filters?.status || 'Active');
@@ -457,6 +460,21 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
     const [modalMode, setModalMode] = useState('create');
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, employee: null, action: null });
+    const [showCredentials, setShowCredentials] = useState(false);
+    const [copiedField, setCopiedField] = useState(null);
+
+    // Show credentials modal when a new employee is created
+    useEffect(() => {
+        if (flash?.temp_credentials) {
+            setShowCredentials(true);
+        }
+    }, [flash?.temp_credentials]);
+
+    const copyToClipboard = (text, field) => {
+        navigator.clipboard.writeText(text);
+        setCopiedField(field);
+        setTimeout(() => setCopiedField(null), 2000);
+    };
 
     const handleSearch = (e) => {
         const query = e.target.value;
@@ -661,6 +679,54 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                 variant={confirmModal.action === 'archive' ? 'confirm' : 'warning'}
                 confirmText={confirmModal.action === 'archive' ? 'Archive' : 'Restore'}
             />
+
+            {/* Temporary Credentials Modal */}
+            {showCredentials && flash?.temp_credentials && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden border border-[hsl(var(--border))]">
+                        <div className="p-6 border-b border-[hsl(var(--border))] bg-gradient-to-r from-pink-50 to-rose-50 flex items-center gap-3">
+                            <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
+                                <ShieldCheck size={22} />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-bold text-gray-900">Employee Created!</h3>
+                                <p className="text-sm text-gray-600">Temporary login credentials</p>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                <p className="text-sm text-amber-800 font-medium">⚠️ This password will only be shown once. Please copy it now and provide it to the employee securely.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <span className="flex-1 font-mono text-sm text-gray-800">{flash.temp_credentials.email}</span>
+                                    <button onClick={() => copyToClipboard(flash.temp_credentials.email, 'email')} className="p-1.5 hover:bg-gray-200 rounded-md transition-colors">
+                                        {copiedField === 'email' ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-500 mb-1">Temporary Password</label>
+                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <span className="flex-1 font-mono text-sm text-gray-800">{flash.temp_credentials.password}</span>
+                                    <button onClick={() => copyToClipboard(flash.temp_credentials.password, 'password')} className="p-1.5 hover:bg-gray-200 rounded-md transition-colors">
+                                        {copiedField === 'password' ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="pt-2">
+                                <button
+                                    onClick={() => setShowCredentials(false)}
+                                    className="w-full py-2.5 bg-[hsl(var(--primary))] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                                >
+                                    I've Saved the Credentials
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

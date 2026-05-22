@@ -4,6 +4,7 @@ import { Settings as SettingsIcon, ShieldCheck, KeyRound, LockKeyhole } from 'lu
 import StaffLayout from '@/Layouts/StaffLayout';
 import Button from '@/Components/common/Button';
 import Input from '@/Components/common/Input';
+import PasswordStrengthIndicator from '@/Components/common/PasswordStrengthIndicator';
 
 const Settings = () => {
     const { flash } = usePage().props;
@@ -149,6 +150,7 @@ const Settings = () => {
                                     className="block w-full"
                                     required
                                 />
+                                <PasswordStrengthIndicator password={pwdData.password} />
                             </div>
 
                             <div>

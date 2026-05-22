@@ -11,15 +11,8 @@ use Inertia\Inertia;
 
 class LoginController extends Controller
 {
-    public function show(Request $request)
+    public function show()
     {
-        // If already logged in, log out first so user can switch accounts
-        if (Auth::check()) {
-            Auth::logout();
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-        }
-
         return Inertia::render('Auth/Login');
     }
 
@@ -44,7 +37,7 @@ class LoginController extends Controller
             RateLimiter::clear($throttleKey);
             $request->session()->regenerate();
 
-            \Illuminate\Support\Facades\Log::info('Login successful: ' . Auth::user()->email . ' | Is Admin: ' . (Auth::user()->is_admin ? 'YES' : 'NO'));
+            \Illuminate\Support\Facades\Log::info('Login successful: user_id=' . Auth::id() . ' | role=' . (Auth::user()->is_admin ? 'admin' : 'staff'));
 
             if (Auth::user()->is_admin) {
                 $request->session()->put('mfa_verified', false);

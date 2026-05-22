@@ -16,20 +16,20 @@ class POSSeeder extends Seeder
     public function run(): void
     {
         // Create Categories
-        $scrambleCategory = Category::create([
-            'name' => 'Ice Scramble',
-            'slug' => 'scramble',
-        ]);
+        $scrambleCategory = Category::updateOrCreate(
+            ['slug' => 'scramble'],
+            ['name' => 'Ice Scramble']
+        );
 
-        $frappeCategory = Category::create([
-            'name' => 'Frappes',
-            'slug' => 'frappe',
-        ]);
+        $frappeCategory = Category::updateOrCreate(
+            ['slug' => 'frappe'],
+            ['name' => 'Frappes']
+        );
 
-        $sodaCategory = Category::create([
-            'name' => 'Fruit Soda',
-            'slug' => 'soda',
-        ]);
+        $sodaCategory = Category::updateOrCreate(
+            ['slug' => 'soda'],
+            ['name' => 'Fruit Soda']
+        );
 
         // Ice Scramble Sizes
         $scrambleSizes = [
@@ -51,7 +51,10 @@ class POSSeeder extends Seeder
         ];
 
         foreach ($scrambleAddonNames as $a) {
-            $addons[$a['name']] = Addon::create($a);
+            $addons[$a['name']] = Addon::updateOrCreate(
+                ['name' => $a['name']],
+                ['price' => $a['price']]
+            );
         }
 
         $sodaAddonNames = [
@@ -60,7 +63,10 @@ class POSSeeder extends Seeder
         ];
 
         foreach ($sodaAddonNames as $a) {
-            $addons[$a['name']] = Addon::create($a);
+            $addons[$a['name']] = Addon::updateOrCreate(
+                ['name' => $a['name']],
+                ['price' => $a['price']]
+            );
         }
 
         // Create Ice Scramble Products
@@ -74,30 +80,33 @@ class POSSeeder extends Seeder
         ];
 
         foreach ($scrambleFlavors as $flavor => $image) {
-            $product = Product::create([
-                'category_id' => $scrambleCategory->id,
-                'name' => $flavor . ' Ice Scramble',
-                'flavor' => $flavor,
-                'base_price' => 100,
-                'has_sizes' => true,
-                'image' => $image,
-                'is_active' => true,
-            ]);
+            $product = Product::updateOrCreate(
+                ['name' => $flavor . ' Ice Scramble'],
+                [
+                    'category_id' => $scrambleCategory->id,
+                    'flavor' => $flavor,
+                    'base_price' => 100,
+                    'has_sizes' => true,
+                    'image' => $image,
+                    'is_active' => true,
+                ]
+            );
 
             // Add sizes
             foreach ($scrambleSizes as $size) {
-                ProductSize::create([
-                    'product_id' => $product->id,
-                    'name' => $size['name'],
-                    'price' => $size['price'],
-                    'sort_order' => $size['sort_order'],
-                ]);
+                ProductSize::updateOrCreate(
+                    ['product_id' => $product->id, 'name' => $size['name']],
+                    [
+                        'price' => $size['price'],
+                        'sort_order' => $size['sort_order'],
+                    ]
+                );
             }
 
             // Attach shared addons
             // Get IDs of scramble addons
             $scrambleAddonIds = collect($scrambleAddonNames)->map(fn($a) => $addons[$a['name']]->id);
-            $product->addons()->attach($scrambleAddonIds);
+            $product->addons()->syncWithoutDetaching($scrambleAddonIds);
         }
 
         // Create Frappe Products (no sizes, no addons)
@@ -108,15 +117,17 @@ class POSSeeder extends Seeder
         ];
 
         foreach ($frappeFlavors as $flavor => $image) {
-            Product::create([
-                'category_id' => $frappeCategory->id,
-                'name' => $flavor . ' Frappe',
-                'flavor' => $flavor,
-                'base_price' => 149,
-                'has_sizes' => false,
-                'image' => $image,
-                'is_active' => true,
-            ]);
+            Product::updateOrCreate(
+                ['name' => $flavor . ' Frappe'],
+                [
+                    'category_id' => $frappeCategory->id,
+                    'flavor' => $flavor,
+                    'base_price' => 149,
+                    'has_sizes' => false,
+                    'image' => $image,
+                    'is_active' => true,
+                ]
+            );
         }
 
         // Create Fruit Soda Products (with addons, no sizes)
@@ -129,19 +140,21 @@ class POSSeeder extends Seeder
         ];
 
         foreach ($sodaFlavors as $flavor => $image) {
-            $product = Product::create([
-                'category_id' => $sodaCategory->id,
-                'name' => $flavor . ' Fruit Soda',
-                'flavor' => $flavor,
-                'base_price' => 59,
-                'has_sizes' => false,
-                'image' => $image,
-                'is_active' => true,
-            ]);
+            $product = Product::updateOrCreate(
+                ['name' => $flavor . ' Fruit Soda'],
+                [
+                    'category_id' => $sodaCategory->id,
+                    'flavor' => $flavor,
+                    'base_price' => 59,
+                    'has_sizes' => false,
+                    'image' => $image,
+                    'is_active' => true,
+                ]
+            );
 
             // Attach soda addons
             $sodaAddonIds = collect($sodaAddonNames)->map(fn($a) => $addons[$a['name']]->id);
-            $product->addons()->attach($sodaAddonIds);
+            $product->addons()->syncWithoutDetaching($sodaAddonIds);
         }
     }
 }
