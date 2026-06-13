@@ -123,15 +123,17 @@ Route::prefix('staff')->middleware('auth')->group(function () {
     Route::post('/settings/pin', [\App\Http\Controllers\Staff\ProfileController::class, 'updatePin'])->name('staff.settings.pin');
 });
 
-// Presentation Demo Helpers (Hidden Routes)
-Route::get('/dev/fake-ip', function() {
-    file_put_contents(storage_path('app/fake_ip.txt'), '8.8.8.8');
-    return 'Demo Mode: IP is now 8.8.8.8 (External Network). Close this tab and test the clock-in!';
-});
+// Presentation Demo Helpers (Hidden Routes) - Locked to local environment only!
+if (app()->environment('local')) {
+    Route::get('/dev/fake-ip', function() {
+        file_put_contents(storage_path('app/fake_ip.txt'), '8.8.8.8');
+        return 'Demo Mode: IP is now 8.8.8.8 (External Network). Close this tab and test the clock-in!';
+    });
 
-Route::get('/dev/reset-ip', function() {
-    if(file_exists(storage_path('app/fake_ip.txt'))) {
-        unlink(storage_path('app/fake_ip.txt'));
-    }
-    return 'Demo Mode: IP reset to normal (Internal Network). Close this tab.';
-});
+    Route::get('/dev/reset-ip', function() {
+        if(file_exists(storage_path('app/fake_ip.txt'))) {
+            unlink(storage_path('app/fake_ip.txt'));
+        }
+        return 'Demo Mode: IP reset to normal (Internal Network). Close this tab.';
+    });
+}
