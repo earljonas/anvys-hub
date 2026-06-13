@@ -470,6 +470,20 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
         }
     }, [flash?.temp_credentials]);
 
+    // Handle Escape key to close the credentials modal
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && showCredentials) {
+                setShowCredentials(false);
+            }
+        };
+
+        if (showCredentials) {
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [showCredentials]);
+
     const copyToClipboard = (text, field) => {
         navigator.clipboard.writeText(text);
         setCopiedField(field);
@@ -682,20 +696,26 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
 
             {/* Temporary Credentials Modal */}
             {showCredentials && flash?.temp_credentials && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="setup-modal-title"
+                    aria-describedby="setup-modal-desc"
+                >
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden border border-[hsl(var(--border))]">
                         <div className="p-6 border-b border-[hsl(var(--border))] bg-gradient-to-r from-pink-50 to-rose-50 flex items-center gap-3">
                             <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
                                 <ShieldCheck size={22} />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-gray-900">Employee Created!</h3>
-                                <p className="text-sm text-gray-600">Temporary login credentials</p>
+                                <h3 id="setup-modal-title" className="text-lg font-bold text-gray-900">Employee Created!</h3>
+                                <p id="setup-modal-desc" className="text-sm text-gray-600">Account setup instructions</p>
                             </div>
                         </div>
                         <div className="p-6 space-y-4">
                             <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-                                <p className="text-sm text-amber-800 font-medium">⚠️ This password will only be shown once. Please copy it now and provide it to the employee securely.</p>
+                                <p className="text-sm text-amber-800 font-medium">⚠️ This setup link will only be shown once. Please copy it now and send it to the employee securely so they can set their password.</p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
@@ -707,11 +727,11 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-500 mb-1">Temporary Password</label>
+                                <label className="block text-sm font-medium text-gray-500 mb-1">Account Setup Link</label>
                                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
-                                    <span className="flex-1 font-mono text-sm text-gray-800">{flash.temp_credentials.password}</span>
-                                    <button onClick={() => copyToClipboard(flash.temp_credentials.password, 'password')} className="p-1.5 hover:bg-gray-200 rounded-md transition-colors">
-                                        {copiedField === 'password' ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
+                                    <span className="flex-1 font-mono text-sm text-gray-800 truncate" title={flash.temp_credentials.setup_link}>{flash.temp_credentials.setup_link}</span>
+                                    <button onClick={() => copyToClipboard(flash.temp_credentials.setup_link, 'setup_link')} className="p-1.5 hover:bg-gray-200 rounded-md transition-colors shrink-0">
+                                        {copiedField === 'setup_link' ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
                                     </button>
                                 </div>
                             </div>
@@ -720,7 +740,7 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                                     onClick={() => setShowCredentials(false)}
                                     className="w-full py-2.5 bg-[hsl(var(--primary))] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
                                 >
-                                    I've Saved the Credentials
+                                    I've Saved the Setup Link
                                 </button>
                             </div>
                         </div>

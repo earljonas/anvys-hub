@@ -73,9 +73,7 @@ class EmployeeController extends Controller
             $count++;
         }
 
-        // Generate a unique random temporary password for each new employee
-        $tempPassword = Str::password(12);
-
+        // We no longer generate or show a plaintext password. We generate a setup link instead.
         $user = User::create([
             'name' => $validated['first_name'] . ' ' . $validated['last_name'],
             'first_name' => $validated['first_name'],
@@ -83,10 +81,14 @@ class EmployeeController extends Controller
             'contact_number' => $validated['contact_number'],
             'address' => $validated['address'],
             'email' => $email,
-            'password' => Hash::make($tempPassword),
+            'password' => Hash::make(Str::password(32)), // Random secure password until they set their own
             'clock_pin' => $validated['clock_pin'] ?? null,
             'is_admin' => false,
         ]);
+
+        $setupLink = \Illuminate\Support\Facades\URL::temporarySignedRoute(
+            'setup.account.show', now()->addDays(7), ['user' => $user->id]
+        );
         
         $user->employee()->create([
             'employee_id' => 'EMP-' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
@@ -106,7 +108,7 @@ class EmployeeController extends Controller
             'success' => 'Employee created successfully.',
             'temp_credentials' => [
                 'email' => $email,
-                'password' => $tempPassword,
+                'setup_link' => $setupLink,
             ],
         ]);
     }

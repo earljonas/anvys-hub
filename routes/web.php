@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Controllers\Auth\HomeController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\SetupAccountController;
 use App\Http\Controllers\Auth\MfaController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -25,6 +26,9 @@ Route::get('/', [HomeController::class, 'index']);
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'show'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login')->name('login.post');
+
+    Route::get('/setup-account/{user}', [SetupAccountController::class, 'show'])->name('setup.account.show')->middleware('signed');
+    Route::post('/setup-account/{user}', [SetupAccountController::class, 'update'])->name('setup.account.update')->middleware('signed');
 });
 
 Route::post('/logout', [LoginController::class, 'logout'])
@@ -117,4 +121,17 @@ Route::prefix('staff')->middleware('auth')->group(function () {
     Route::get('/settings', [\App\Http\Controllers\Staff\ProfileController::class, 'index'])->name('staff.settings');
     Route::post('/settings/password', [\App\Http\Controllers\Staff\ProfileController::class, 'updatePassword'])->name('staff.settings.password');
     Route::post('/settings/pin', [\App\Http\Controllers\Staff\ProfileController::class, 'updatePin'])->name('staff.settings.pin');
+});
+
+// Presentation Demo Helpers (Hidden Routes)
+Route::get('/dev/fake-ip', function() {
+    file_put_contents(storage_path('app/fake_ip.txt'), '8.8.8.8');
+    return 'Demo Mode: IP is now 8.8.8.8 (External Network). Close this tab and test the clock-in!';
+});
+
+Route::get('/dev/reset-ip', function() {
+    if(file_exists(storage_path('app/fake_ip.txt'))) {
+        unlink(storage_path('app/fake_ip.txt'));
+    }
+    return 'Demo Mode: IP reset to normal (Internal Network). Close this tab.';
 });
