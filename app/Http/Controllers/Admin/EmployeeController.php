@@ -87,7 +87,10 @@ class EmployeeController extends Controller
         ]);
 
         $setupLink = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-            'setup.account.show', now()->addDays(7), ['user' => $user->id]
+            'setup.account.show', now()->addDays(7), [
+                'user' => $user->id,
+                'hash' => sha1($user->password)
+            ]
         );
         
         $user->employee()->create([

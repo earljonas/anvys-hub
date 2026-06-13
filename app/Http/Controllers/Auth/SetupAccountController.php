@@ -13,6 +13,10 @@ class SetupAccountController extends Controller
 {
     public function show(Request $request, User $user)
     {
+        if (! hash_equals((string) $request->query('hash'), sha1($user->password))) {
+            abort(403, 'This setup link has already been used or is invalid.');
+        }
+
         return Inertia::render('Auth/SetupAccount', [
             'userId' => $user->id,
             'name' => $user->name,
@@ -24,6 +28,10 @@ class SetupAccountController extends Controller
 
     public function update(Request $request, User $user)
     {
+        if (! hash_equals((string) $request->query('hash'), sha1($user->password))) {
+            abort(403, 'This setup link has already been used or is invalid.');
+        }
+
         $validated = $request->validate([
             'password' => ['required', 'confirmed', 'min:8'],
         ]);
@@ -34,6 +42,7 @@ class SetupAccountController extends Controller
 
         // Automatically log them in
         Auth::login($user);
+        $request->session()->regenerate();
 
         return redirect()->to('/')->with('success', 'Account setup complete! Welcome to Anvys Hub.');
     }
