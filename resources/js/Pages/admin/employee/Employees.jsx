@@ -484,10 +484,14 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
         return () => document.removeEventListener('keydown', handleKeyDown);
     }, [showCredentials]);
 
-    const copyToClipboard = (text, field) => {
-        navigator.clipboard.writeText(text);
-        setCopiedField(field);
-        setTimeout(() => setCopiedField(null), 2000);
+    const copyToClipboard = async (text, field) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedField(field);
+            setTimeout(() => setCopiedField(null), 2000);
+        } catch (err) {
+            console.error('Failed to copy to clipboard:', err);
+        }
     };
 
     const handleSearch = (e) => {
