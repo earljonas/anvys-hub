@@ -10,10 +10,9 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
     const { post, processing } = useForm();
     const printRef = useRef();
     const [showBreakdown, setShowBreakdown] = useState(false);
+    const [paidConfirmOpen, setPaidConfirmOpen] = useState(false);
 
     if (!isOpen || !payroll) return null;
-
-    const [paidConfirmOpen, setPaidConfirmOpen] = useState(false);
 
     const handleMarkAsPaid = () => {
         setPaidConfirmOpen(true);
@@ -86,7 +85,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                     </div>
                     <div class="info-box">
                         <div class="info-label">Status</div>
-                        <div class="info-value">${payroll.status.toUpperCase()}</div>
+                        <div class="info-value">${String(payroll.status || 'draft').toUpperCase()}</div>
                     </div>
                 </div>
 
@@ -140,7 +139,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                             <th style="text-align: right; color: #d32f2f;">Pag-IBIG</th>
                             <th style="text-align: right;">Net Pay</th>
                         </tr>
-                        ${payroll.individual_payslips.map(slip => `
+                        ${(Array.isArray(payroll.individual_payslips) ? payroll.individual_payslips : Object.values(payroll.individual_payslips || {})).map(slip => `
                         <tr>
                             <td>${escapeHtml(slip.employee_name)}</td>
                             <td style="text-align: right;">${Number(slip.hours_worked).toFixed(2)} hrs</td>
@@ -192,7 +191,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                 <div className="bg-[hsl(var(--muted))]/30 p-4 rounded-xl border border-[hsl(var(--border))]">
                     <p className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase">Period</p>
                     <h3 className="text-sm font-bold mt-1 text-[hsl(var(--foreground))]">
-                        {format(new Date(payroll.start_date), 'MMM dd')} - {format(new Date(payroll.end_date), 'MMM dd, yyyy')}
+                        {payroll.start_date ? format(new Date(payroll.start_date), 'MMM dd') : ''} - {payroll.end_date ? format(new Date(payroll.end_date), 'MMM dd, yyyy') : ''}
                     </h3>
                 </div>
                 <div className="bg-[hsl(var(--muted))]/30 p-4 rounded-xl border border-[hsl(var(--border))]">
@@ -203,7 +202,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                             : 'bg-yellow-100 text-yellow-800'
                             }`}>
                             {payroll.status === 'paid' && <CheckCircle className="w-3 h-3 mr-1" />}
-                            {payroll.status.toUpperCase()}
+                            {String(payroll.status || 'draft').toUpperCase()}
                         </span>
                     </div>
                 </div>
@@ -307,7 +306,7 @@ const PayrollDetailsModal = ({ isOpen, onClose, payroll }) => {
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[hsl(var(--border))]/50">
-                                        {payroll.individual_payslips && payroll.individual_payslips.map((slip) => (
+                                        {payroll.individual_payslips && (Array.isArray(payroll.individual_payslips) ? payroll.individual_payslips : Object.values(payroll.individual_payslips)).map((slip) => (
                                             <tr key={slip.id} className="hover:bg-[hsl(var(--muted))]/10">
                                                 <td className="px-3 py-3 font-medium text-[hsl(var(--foreground))]">{slip.employee_name}</td>
                                                 <td className="px-3 py-3 text-right">{Number(slip.hours_worked).toFixed(2)} hrs</td>

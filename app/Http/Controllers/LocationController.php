@@ -19,6 +19,7 @@ class LocationController extends Controller
                 'id' => $location->id,
                 'name' => $location->name,
                 'address' => $location->address,
+                'allowed_ip' => $location->allowed_ip,
                 'status' => $location->status,
                 'staffCount' => $location->employees_count,
             ];
@@ -34,11 +35,13 @@ class LocationController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
+            'allowed_ip' => 'nullable|string|ip|max:45',
         ]);
 
         Location::create([
             'name' => $validated['name'],
             'address' => $validated['address'],
+            'allowed_ip' => $validated['allowed_ip'] ?? null,
             'status' => 'Active',
         ]);
 
@@ -53,6 +56,7 @@ class LocationController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'address' => 'required|string|max:500',
+            'allowed_ip' => 'nullable|string|ip|max:45',
         ]);
 
         $location->update($validated);

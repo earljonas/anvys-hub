@@ -61,7 +61,9 @@ class PayrollController extends Controller
                 if ($payslips->count() === 1) {
                     $employee_name = optional($payslips->first()->user)->name ?? 'Unknown Employee';
                 } else {
-                    $employee_name = $payslips->count() > 0 ? 'Bulk Payroll (' . $payslips->count() . ' Employees)' : 'Empty Payroll';
+                    $employee_name = $payslips->count() > 0 ? $payslips->map(function ($slip) {
+                        return optional($slip->user)->name;
+                    })->filter()->implode(', ') : 'Empty Payroll';
                 }
 
                 return [
@@ -81,7 +83,10 @@ class PayrollController extends Controller
                     'payment_date' => $payroll->payment_date,
                     'is_bulk' => $payslips->count() > 1,
                     'individual_payslips' => $payslips->map(function ($slip) {
-                        $slipDeductions = is_array($slip->deductions) ? $slip->deductions : [];
+                        $slipDeductions = is_string($slip->deductions) 
+                            ? json_decode($slip->deductions, true) 
+                            : (is_array($slip->deductions) ? $slip->deductions : []);
+                        
                         return [
                             'id' => $slip->id,
                             'employee_name' => optional($slip->user)->name ?? 'Unknown',
@@ -123,21 +128,36 @@ class PayrollController extends Controller
     public function calculate(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
+            'user_id' => 'required',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
         ]);
 
-        $user = \App\Models\User::with('employee')->findOrFail($request->user_id);
+        if ($request->user_id !== 'all' && !\App\Models\User::where('id', $request->user_id)->exists()) {
+            return response()->json(['error' => 'The selected user is invalid.'], 422);
+        }
 
-        $calculation = $this->payrollService->calculateForUser(
-            $user,
-            $request->start_date,
-            $request->end_date
-        );
+        if ($request->user_id === 'all') {
+            $calculation = $this->payrollService->calculateBulkPreview(
+                $request->start_date,
+                $request->end_date
+            );
 
-        if (!$calculation) {
-            return response()->json(['error' => 'No approved attendance records found for this period.'], 422);
+            if (!$calculation) {
+                return response()->json(['error' => 'No eligible employees found or all employees already have payroll for this period.'], 422);
+            }
+        } else {
+            $user = \App\Models\User::with('employee')->findOrFail($request->user_id);
+
+            $calculation = $this->payrollService->calculateForUser(
+                $user,
+                $request->start_date,
+                $request->end_date
+            );
+
+            if (!$calculation) {
+                return response()->json(['error' => 'No approved attendance records found for this period.'], 422);
+            }
         }
 
         return response()->json($calculation);

@@ -194,8 +194,20 @@ const Navbar = () => {
                                     </div>
                                 </div>
 
+                                {/* Settings Section */}
+                                <div className="p-2 border-b border-[hsl(var(--border))]">
+                                    <Link
+                                        href="/staff/settings"
+                                        className="w-full flex items-center gap-3 px-3 py-2.5 cursor-pointer text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-xl transition-colors text-left"
+                                        onClick={() => setProfileDropdownOpen(false)}
+                                    >
+                                        <Settings size={18} />
+                                        <span className="text-sm font-medium">Settings</span>
+                                    </Link>
+                                </div>
+
                                 {/* Logout Section */}
-                                <div className="p-2 border-t border-[hsl(var(--border))]">
+                                <div className="p-2">
                                     <Link
                                         href="/logout"
                                         method="post"

@@ -37,7 +37,10 @@ class EventPackageSeeder extends Seeder
         ];
 
         foreach ($packages as $pkg) {
-            EventPackage::create($pkg);
+            EventPackage::updateOrCreate(
+                ['slug' => $pkg['slug']],
+                $pkg
+            );
         }
     }
 }

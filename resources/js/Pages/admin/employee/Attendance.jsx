@@ -437,7 +437,7 @@ const Attendance = ({ records, filters }) => {
                     ? `Approve attendance for ${confirmModal.record?.user?.name}?`
                     : `Reject attendance for ${confirmModal.record?.user?.name}?`
                 }
-                variant={confirmModal.action === 'approve' ? 'warning' : 'confirm'}
+                variant={confirmModal.action === 'approve' ? 'primary' : 'confirm'}
                 confirmText={confirmModal.action === 'approve' ? 'Approve' : 'Reject'}
             />
         </div>

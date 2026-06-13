@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Head, useForm, router } from '@inertiajs/react';
+import { Head, useForm, router, usePage } from '@inertiajs/react';
 import AdminLayout from '@/Layouts/AdminLayout';
-import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X } from 'lucide-react';
+import { Users, Search, Plus, MapPin, Phone, Mail, Edit2, Wallet, Briefcase, FileText, Eye, Archive, MoreVertical, RotateCcw, X, Copy, CheckCircle, ShieldCheck } from 'lucide-react';
 import Button from '@/Components/common/Button';
 import Input from '@/Components/common/Input';
 import ConfirmModal from '@/Components/common/ConfirmModal';
@@ -136,6 +136,10 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
         employment_type: 'full_time',
         hourly_rate: 0,
         basic_salary: 0,
+        tin_number: '',
+        sss_number: '',
+        philhealth_number: '',
+        pagibig_number: '',
         clock_pin: '',
     });
 
@@ -154,6 +158,10 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
                     employment_type: employee.employee?.employment_type || 'full_time',
                     hourly_rate: employee.employee?.hourly_rate || 0,
                     basic_salary: employee.employee?.basic_salary || 0,
+                    tin_number: employee.employee?.tin_number || '',
+                    sss_number: employee.employee?.sss_number || '',
+                    philhealth_number: employee.employee?.philhealth_number || '',
+                    pagibig_number: employee.employee?.pagibig_number || '',
                     clock_pin: employee.clock_pin || '',
                 });
             } else {
@@ -172,6 +180,7 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
             });
         } else {
             post(route('admin.employees.store'), {
+                preserveScroll: true,
                 onSuccess: () => { onClose(); reset(); }
             });
         }
@@ -359,6 +368,57 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
                                 </div>
                             </div>
                         )}
+
+                        {/* Section: Government Contributions */}
+                        {!isView && (
+                            <div className="space-y-4">
+                                <h4 className="text-sm font-semibold text-[hsl(var(--muted-foreground))] uppercase tracking-wider border-b border-[hsl(var(--border))] pb-2">
+                                    Government Contributions
+                                </h4>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">TIN</label>
+                                        <Input
+                                            value={data.tin_number}
+                                            onChange={e => setData('tin_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="000-000-000-000"
+                                        />
+                                        {errors.tin_number && <p className="text-sm text-red-500 mt-1">{errors.tin_number}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">SSS Number</label>
+                                        <Input
+                                            value={data.sss_number}
+                                            onChange={e => setData('sss_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="00-0000000-0"
+                                        />
+                                        {errors.sss_number && <p className="text-sm text-red-500 mt-1">{errors.sss_number}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">PhilHealth Number</label>
+                                        <Input
+                                            value={data.philhealth_number}
+                                            onChange={e => setData('philhealth_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="00-000000000-0"
+                                        />
+                                        {errors.philhealth_number && <p className="text-sm text-red-500 mt-1">{errors.philhealth_number}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-[hsl(var(--foreground))] mb-1">Pag-IBIG Number</label>
+                                        <Input
+                                            value={data.pagibig_number}
+                                            onChange={e => setData('pagibig_number', e.target.value)}
+                                            disabled={isView}
+                                            placeholder="0000-0000-0000"
+                                        />
+                                        {errors.pagibig_number && <p className="text-sm text-red-500 mt-1">{errors.pagibig_number}</p>}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </form>
                 </div>
 
@@ -390,6 +450,8 @@ const EmployeeModal = ({ isOpen, onClose, employee = null, mode = 'create', loca
 };
 
 const Employees = ({ employees = { data: [], links: [] }, locations = [], filters = {} }) => {
+    const { flash } = usePage().props;
+
     // 1. SAFETY: Ensure filters handles nulls
     const [searchQuery, setSearchQuery] = useState(filters?.search || '');
     const [statusFilter, setStatusFilter] = useState(filters?.status || 'Active');
@@ -398,6 +460,39 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
     const [modalMode, setModalMode] = useState('create');
     const [selectedEmployee, setSelectedEmployee] = useState(null);
     const [confirmModal, setConfirmModal] = useState({ isOpen: false, employee: null, action: null });
+    const [showCredentials, setShowCredentials] = useState(false);
+    const [copiedField, setCopiedField] = useState(null);
+
+    // Show credentials modal when a new employee is created
+    useEffect(() => {
+        if (flash?.temp_credentials) {
+            setShowCredentials(true);
+        }
+    }, [flash?.temp_credentials]);
+
+    // Handle Escape key to close the credentials modal
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            if (e.key === 'Escape' && showCredentials) {
+                setShowCredentials(false);
+            }
+        };
+
+        if (showCredentials) {
+            document.addEventListener('keydown', handleKeyDown);
+        }
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [showCredentials]);
+
+    const copyToClipboard = async (text, field) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedField(field);
+            setTimeout(() => setCopiedField(null), 2000);
+        } catch (err) {
+            console.error('Failed to copy to clipboard:', err);
+        }
+    };
 
     const handleSearch = (e) => {
         const query = e.target.value;
@@ -602,6 +697,60 @@ const Employees = ({ employees = { data: [], links: [] }, locations = [], filter
                 variant={confirmModal.action === 'archive' ? 'confirm' : 'warning'}
                 confirmText={confirmModal.action === 'archive' ? 'Archive' : 'Restore'}
             />
+
+            {/* Temporary Credentials Modal */}
+            {showCredentials && flash?.temp_credentials && (
+                <div 
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="setup-modal-title"
+                    aria-describedby="setup-modal-desc"
+                >
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden border border-[hsl(var(--border))]">
+                        <div className="p-6 border-b border-[hsl(var(--border))] bg-gradient-to-r from-pink-50 to-rose-50 flex items-center gap-3">
+                            <div className="p-2 bg-pink-100 rounded-lg text-pink-600">
+                                <ShieldCheck size={22} />
+                            </div>
+                            <div>
+                                <h3 id="setup-modal-title" className="text-lg font-bold text-gray-900">Employee Created!</h3>
+                                <p id="setup-modal-desc" className="text-sm text-gray-600">Account setup instructions</p>
+                            </div>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                                <p className="text-sm text-amber-800 font-medium">⚠️ This setup link will only be shown once. Please copy it now and send it to the employee securely so they can set their password.</p>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <span className="flex-1 font-mono text-sm text-gray-800">{flash.temp_credentials.email}</span>
+                                    <button onClick={() => copyToClipboard(flash.temp_credentials.email, 'email')} className="p-1.5 hover:bg-gray-200 rounded-md transition-colors">
+                                        {copiedField === 'email' ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-500 mb-1">Account Setup Link</label>
+                                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <span className="flex-1 font-mono text-sm text-gray-800 truncate" title={flash.temp_credentials.setup_link}>{flash.temp_credentials.setup_link}</span>
+                                    <button onClick={() => copyToClipboard(flash.temp_credentials.setup_link, 'setup_link')} className="p-1.5 hover:bg-gray-200 rounded-md transition-colors shrink-0">
+                                        {copiedField === 'setup_link' ? <CheckCircle size={16} className="text-green-600" /> : <Copy size={16} className="text-gray-500" />}
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="pt-2">
+                                <button
+                                    onClick={() => setShowCredentials(false)}
+                                    className="w-full py-2.5 bg-[hsl(var(--primary))] text-white font-medium rounded-lg hover:opacity-90 transition-opacity"
+                                >
+                                    I've Saved the Setup Link
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

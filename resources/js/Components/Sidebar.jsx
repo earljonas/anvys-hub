@@ -10,6 +10,7 @@ import {
     LogOut,
     PanelLeft,
     ChevronRight,
+    Settings as SettingsIcon,
 } from 'lucide-react'
 
 const Sidebar = () => {
@@ -34,6 +35,7 @@ const Sidebar = () => {
         { name: 'Inventory', icon: Package, path: '/admin/inventory' },
         { name: 'Locations', icon: MapPin, path: '/admin/locations' },
         { name: 'Events', icon: Calendar, path: '/admin/events' },
+        { name: 'Settings', icon: SettingsIcon, path: '/admin/settings' },
     ]
 
     const employeeSubItems = [
@@ -48,6 +50,7 @@ const Sidebar = () => {
         { name: 'Inventory', path: '/admin/reports/inventory' },
         { name: 'Events', path: '/admin/reports/events' },
         { name: 'Payroll', path: '/admin/reports/payroll' },
+        { name: 'Audit Logs', path: '/admin/reports/audit-logs' },
     ]
 
     const employeePaths = employeeSubItems.map(item => item.path)

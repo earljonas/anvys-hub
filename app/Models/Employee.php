@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes; // Recommended to match User soft deletes
+use App\Traits\LogsActivity;
 
 class Employee extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, LogsActivity;
 
     protected $fillable = [
         'user_id',
@@ -28,8 +29,12 @@ class Employee extends Model
     ];
 
     protected $casts = [
-        'hourly_rate' => 'decimal:2',
-        'basic_salary' => 'decimal:2',
+        'hourly_rate' => 'encrypted',
+        'basic_salary' => 'encrypted',
+        'tin_number' => 'encrypted',
+        'sss_number' => 'encrypted',
+        'philhealth_number' => 'encrypted',
+        'pagibig_number' => 'encrypted',
     ];
 
     public function user(): BelongsTo

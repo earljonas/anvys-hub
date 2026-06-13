@@ -17,6 +17,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Prevent seeding predictable credentials in production
+        if (!app()->environment('local', 'testing')) {
+            $this->command->warn('Seeder skipped: not in local/testing environment.');
+            return;
+        }
         // 1. Create Admin User
         $admin = User::firstOrCreate(
             ['email' => 'admin@anvys.com'],
@@ -25,7 +30,7 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Jonas',
                 'last_name' => 'Admin',
                 'contact_number' => '09171234567',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Anvyadmin@2026'),
                 'is_admin' => true,
             ]
         );
@@ -38,7 +43,7 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Sarah',
                 'last_name' => 'Staff',
                 'contact_number' => '09179876543',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Anvystaff@2026'),
                 'is_admin' => false,
             ]
         );
@@ -51,7 +56,7 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Mike',
                 'last_name' => 'Stockman',
                 'contact_number' => '09175554444',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Anvystaff@2026'),
                 'is_admin' => false,
             ]
         );
@@ -63,7 +68,7 @@ class DatabaseSeeder extends Seeder
                 'first_name' => 'Jenny',
                 'last_name' => 'Server',
                 'contact_number' => '09171112222',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Anvystaff@2026'),
                 'is_admin' => false,
             ]
         );
