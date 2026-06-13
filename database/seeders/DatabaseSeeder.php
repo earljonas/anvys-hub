@@ -22,7 +22,6 @@ class DatabaseSeeder extends Seeder
             $this->command->warn('Seeder skipped: not in local/testing environment.');
             return;
         }
-
         // 1. Create Admin User
         $admin = User::firstOrCreate(
             ['email' => 'admin@anvys.com'],
