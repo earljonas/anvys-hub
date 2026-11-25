@@ -1,82 +1,51 @@
 # Anvys Hub
 
-A business management platform built for small to mid-sized operations that need POS, inventory, and HR tooling without stitching together three separate systems. Everything runs through one interface — sales, stock levels, event management, employee records, payroll, scheduling.
+Anvys Hub brings checkout, branch inventory, event bookings, and employee operations into one web app for small retail businesses with multiple locations.
 
-## Features
+Staff can record a sale, check stock, or clock in from the same workspace. Administrators can plan shifts, review attendance, and generate payroll from approved hours.
 
-### Point of Sale (POS)
-The checkout interface handles high-volume transactions and integrates directly with product images. It runs with staff context aware of the current logged-in user to attribute sales correctly.
+![Administrator dashboard showing sales, stock alerts, bookings, and a payroll estimate](docs/images/admin-dashboard.webp)
 
-### Inventory Management
-Stock tracking includes detailed movement logs, categorization, and auditing tools. We rely on dynamic staff filters tied to assigned locations to ensure employees only interact with inventory they have access to.
+*Administrator dashboard with demo data from an earlier development build.*
 
-### Human Resources and Payroll Management
-The HR module handles attendance tracking via PIN numbers with clock-in/out validations. It also automates payroll generation (draft, pending, finalized states) and supports exporting dynamic PDF payslips using `jspdf` and `html2canvas`. We manage staff scheduling with calendar interfaces powered by FullCalendar.
+## What you can do
 
-### Reports and Analytics
-Aggregates business data across four primary dashboards:
-- **Sales**: Tracks monthly/weekly revenue, peak hours, and best-selling products.
-- **Inventory**: Monitors low stock alerts, total valuation, and detailed movement logs.
-- **Events**: Summarizes upcoming bookings, attendee counts, and monthly event trends.
-- **Payroll**: Calculates Year-to-Date (YTD) totals, average net pay, and pending payroll statuses.
+| Workflow | Staff | Administrators |
+| --- | --- | --- |
+| Sales and stock | Customize products, record checkout payments, download receipts, and adjust stock. | Manage locations and inventory, review stock movements, and export sales and inventory reports. |
+| Staffing and payroll | Clock in and out, and view published shifts. | Manage employee records, publish shifts, review attendance, and generate payroll and PDF payslips. |
+| Events | | Schedule bookings, record deposits and payments, and export event reports. |
 
-### Event Management
-Handles customer bookings for private events like birthday parties or corporate functions. User can create and manage events through a calendar interface, with payment tracking built in to monitor deposits and balances per booking.
+## How it works
 
-## Tech Stack
-- **Backend**: Laravel 12.0 (PHP 8.2+) / MySQL
-- **Frontend**: React 19 / Inertia.js v2.0
-- **Styling**: Tailwind CSS v4 via Vite
+Laravel 12 serves React 19 pages through Inertia 2. MySQL stores application data, and Vite builds the React and Tailwind CSS assets. Laravel sessions authenticate browser requests, and administrator routes also require the administrator role and a verified one-time code.
 
-## Local Setup
+- **Checkout** saves the order and its line items in one transaction and attributes the sale to the signed-in cashier.
+- **Attendance and payroll** use dedicated Laravel services to calculate worked hours and generate payroll and payslips from approved records.
+- **Reporting** aggregates sales, stock, bookings, and payroll. The four report views also provide CSV exports.
 
-1. **Clone and Install Dependencies**
-   ```bash
-   git clone https://github.com/earljonas/anvys-hub.git
-   cd anvys-hub
-   composer install
-   npm install
-   ```
+See [Architecture](docs/ARCHITECTURE.md) for request flow, data relationships, and implementation details.
 
-2. **Environment Configuration**
-   Copy `.env.example` to `.env`.
-   Generate an application key:
-   ```bash
-   php artisan key:generate
-   ```
-   Before moving to the next step, you must configure your database credentials (`DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`) in your `.env` file. If you run migrations without updating this, you will get connection refused or table not found errors.
+## Run locally
 
-3. **Database Setup**
-   Run the migrations and seeders:
-   ```bash
-   php artisan migrate --seed
-   ```
-   We rely heavily on seeders to set up initial roles and basic configuration. Never skip the `--seed` flag on a fresh install, or the app will break on login due to missing roles.
+Start with PHP 8.4, Composer 2, a compatible Node.js version, and a fresh MySQL database. Use the [setup guide](docs/GETTING_STARTED.md) to set Composer's CA bundle path, copy `.env.example` to `.env`, and configure the database.
 
-4. **Running the App**
-   Anvys Hub requires both the backend API and frontend Vite server running concurrently. You can either use the composer shortcut:
-   ```bash
-   composer run dev
-   ```
-   Or run these in two separate terminals:
-   ```bash
-   php artisan serve
-   ```
-   ```bash
-   npm run dev
-   ```
+```sh
+composer install
+npm ci
+php artisan key:generate
+php artisan migrate --seed
+composer run dev
+```
 
-## Project Structure
+Open [localhost:8000](http://localhost:8000). The guide covers demo sign-in, separate development commands, testing, and the container configuration.
 
-A quick map of where things live so you aren't hunting for files:
+## Current scope
 
-- `app/Http/Controllers/`: Standard Laravel backend logic. Our business logic tends to live here instead of dedicated service classes.
-- `app/Models/`: Eloquent ORM. Pay attention to the relationships defined here before querying.
-- `database/seeders/`: Crucial for local development structure. Check `POSSeeder.php` to see how initial data is structured.
-- `resources/js/Pages/`: Top-level React views for Inertia.js. Each file generally maps 1:1 with a backend route.
-- `resources/js/Components/`: smaller, reusable UI pieces.
-- `routes/web.php`: Standard Laravel routing, mostly returning `Inertia::render()`.
+Checkout records cash, card, and GCash payments taken at the counter. Inventory changes are recorded separately. Payroll uses the rules implemented in the application and requires review before use for real payroll.
+
+The [known limitations](docs/ARCHITECTURE.md#known-limitations) cover location permissions and incomplete payroll screens.
 
 ## License
 
-MIT License
+The repository declares the [MIT license](composer.json).
